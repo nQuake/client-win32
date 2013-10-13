@@ -1,0 +1,68 @@
+# English v1.0, last modified 2007-06-02
+
+# Buttons and titles
+LangString ^Branding ${LANG_ENGLISH}                                   "nQuake Installer v${VERSION}"
+LangString ^SetupCaption ${LANG_ENGLISH}                               "nQuake Installer"
+LangString ^SpaceRequired ${LANG_ENGLISH}                              "Download size: "
+# Installation types
+LangString INSTTYPE_RECOMMENDED ${LANG_ENGLISH}                        "Recommended"
+LangString INSTTYPE_FULL ${LANG_ENGLISH}                               "Full"
+LangString INSTTYPE_MINIMUM ${LANG_ENGLISH}                            "Minimum"
+# Download page
+LangString NSISDL_DOWNLOAD_ERROR ${LANG_ENGLISH}                       "Download error: $0"
+LangString NSISDL_DOWNLOADING ${LANG_ENGLISH}                          "Downloading %s"
+LangString NSISDL_DOWNLOADING_UPDATE ${LANG_ENGLISH}                   "Downloading %s (update)"
+LangString NSISDL_CONNECTING ${LANG_ENGLISH}                           "Connecting ..."
+LangString NSISDL_SECOND ${LANG_ENGLISH}                               "second"
+LangString NSISDL_MINUTE ${LANG_ENGLISH}                               "minute"
+LangString NSISDL_HOUR ${LANG_ENGLISH}                                 "hour"
+LangString NSISDL_PLURAL ${LANG_ENGLISH}                               "s"
+LangString NSISDL_PROGRESS ${LANG_ENGLISH}                             "%dkB (%d%%) of %dkB @ %d.%01dkB/s"
+LangString NSISDL_REMAINING ${LANG_ENGLISH}                            " (%d %s%s remaining)"
+# Extraction
+LangString NSISUNZ_EXTRACTING_FROM ${LANG_ENGLISH}                     "Extracting from: $R0"
+LangString NSISUNZ_EXTRACTION_ERROR ${LANG_ENGLISH}                    "Extraction error: $0"
+LangString NSISUNZ_EXTRACT ${LANG_ENGLISH}                             "Extract: $0"
+# During install
+LangString CLEANING_UP ${LANG_ENGLISH}                                 "Cleaning up installation, please be patient..."
+LangString REMOVED_EMPTY_DIRECTORIES ${LANG_ENGLISH}                   "Removed $0 empty directories"
+LangString REMOVE_DISTFILES ${LANG_ENGLISH}                            "Do you wish to remove the downloaded distfiles?$\r$\nNote: They can be used to install nQuake offline!$\r$\n$\r$\nLocation: $DISTFILES_PATH"
+LangString ABORT_REMOVE_INSTFILES ${LANG_ENGLISH}                      "Installation aborted.$\r$\n$\r$\nDo you wish to remove the installed files?"
+LangString ABORT_REMOVE_DISTFILES ${LANG_ENGLISH}                      "Do you wish to remove the downloaded distfiles?"
+# Uninstallation confirmation (when install.log is missing)
+LangString UNINSTALL_CONFIRMATION ${LANG_ENGLISH}                      "This will remove *all* files in your Quake® directory!$\r$\n$\r$\nAre you sure you want to continue?"
+# Pages
+LangString WELCOMEPAGE_TITLE ${LANG_ENGLISH}                           "nQuake Installation Wizard"
+LangString WELCOMEPAGE_TEXT ${LANG_ENGLISH}                            "This is the installation wizard of nQuake, a QuakeWorld® package made for newcomers, or those who just want to get on with the fragging as soon as possible!\r\n\r\nThis is an online installer and therefore requires a stable internet connection."
+LangString LICENSEPAGE_CHECKBOX ${LANG_ENGLISH}                        "I agree to these terms and conditions"
+LangString PREFERENCESPAGE_HEADER ${LANG_ENGLISH}                      "Preferences"
+LangString PREFERENCESPAGE_SUBHEADER ${LANG_ENGLISH}                   "Choose mirror and download location."
+LangString PREFERENCESPAGE_PREFERENCES_TITLE ${LANG_ENGLISH}           "Preferences"
+LangString PREFERENCESPAGE_MIRROR_TEXT ${LANG_ENGLISH}                 "Please select a mirror from which to download nQuake distribution files:"
+LangString PREFERENCESPAGE_RANDOM_MIRROR ${LANG_ENGLISH}               "Randomly selected mirror (Recommended)"
+LangString PREFERENCESPAGE_DOWNLOAD_TEXT ${LANG_ENGLISH}               "Please select where to download the distribution files:"
+LangString PREFERENCESPAGE_UPDATE_DISTFILES ${LANG_ENGLISH}            "Download updated versions of locally stored distribution files."
+LangString PREFERENCESPAGE_PURCHASE_TITLE ${LANG_ENGLISH}              "Purchase Information"
+LangString PREFERENCESPAGE_FULLVERSION_TEXT ${LANG_ENGLISH}            "The registered version of Quake® offers:\r\n * Three new single-player episodes (22 maps in total).\r\n * Six deathmatch maps (4 of them being tournament maps).\r\n * Ability to create maps and play on user-developed maps.\r\n * Ability to develop level creation utilities.\r\n * Ability to play the official Mission Packs."
+LangString PREFERENCESPAGE_BUYCD_TEXT ${LANG_ENGLISH}                  "Buy Quake® (CD-ROM)"
+LangString FINISHPAGE_SHOWREADME_TEXT ${LANG_ENGLISH}                  "Visit the leading QuakeWorld® Forum"
+LangString FINISHPAGE_SHOWREADME_LINK ${LANG_ENGLISH}                  "http://www.quakeworld.nu/forum"
+# Sections
+LangString NQUAKE ${LANG_ENGLISH}                                      "QuakeWorld"
+LangString FROGBOT ${LANG_ENGLISH}                                     "Bot System"
+LangString EYECANDY ${LANG_ENGLISH}                                    "Improved Visuals"
+LangString MAPS ${LANG_ENGLISH}                                        "Additional Levels"
+LangString DEMOS ${LANG_ENGLISH}                                       "Match Demos"
+# Section descriptions
+LangString DESC_NQUAKE ${LANG_ENGLISH}                                 "The most basic files you need to be able to play QuakeWorld."
+LangString DESC_FROGBOT ${LANG_ENGLISH}                                "Play against a computer controlled opponent when your friends don't have time for games."
+LangString DESC_EYECANDY ${LANG_ENGLISH}                               "These stunningly improved visuals take QuakeWorld graphics into the 21st century."
+LangString DESC_MAPS ${LANG_ENGLISH}                                   "Custom developed multiplayer levels. Enjoy QuakeWorld on levels which were originally designed for multiplay."
+LangString DESC_DEMOS ${LANG_ENGLISH}                                  "Crack a beer open and enjoy these incredibly fast-paced games which truly demonstrates the superiority of QuakeWorld."
+# Shortcuts
+LangString SHORT_EZQUAKE ${LANG_ENGLISH}                               "Start ezQuake"
+LangString SHORT_NEWS ${LANG_ENGLISH}                                  "Latest News"
+LangString SHORT_FORUM ${LANG_ENGLISH}                                 "Message Board"
+LangString SHORT_SERVERS ${LANG_ENGLISH}                               "List of Servers"
+LangString SHORT_DEMOS ${LANG_ENGLISH}                                 "Match Demos"
+LangString SHORT_UNINSTALL ${LANG_ENGLISH}                             "Uninstall nQuake"
