@@ -1,0 +1,10 @@
+2007-07-04 - nQuake v1.01
+
+* Added link to gfx.qwdrama.com in Links.
+* Fixed bug where installer doesn't remove distfiledates.ini from nquake-distfiles.
+* Changed "Improved Visuals" to "Enhanced Graphics".
+* Changed help/update links in program info (they were fQuake links in v1.0).
+
+2007-07-01 - nQuake v1.0
+
+* First public release.

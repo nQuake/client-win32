@@ -45,18 +45,18 @@ LangString PREFERENCESPAGE_UPDATE_DISTFILES ${LANG_ENGLISH}            "Download
 LangString PREFERENCESPAGE_PURCHASE_TITLE ${LANG_ENGLISH}              "Purchase Information"
 LangString PREFERENCESPAGE_FULLVERSION_TEXT ${LANG_ENGLISH}            "The registered version of Quake® offers:\r\n * Three new single-player episodes (22 maps in total).\r\n * Six deathmatch maps (4 of them being tournament maps).\r\n * Ability to create maps and play on user-developed maps.\r\n * Ability to develop level creation utilities.\r\n * Ability to play the official Mission Packs."
 LangString PREFERENCESPAGE_BUYCD_TEXT ${LANG_ENGLISH}                  "Buy Quake® (CD-ROM)"
-LangString FINISHPAGE_SHOWREADME_TEXT ${LANG_ENGLISH}                  "Visit the leading QuakeWorld® Forum"
-LangString FINISHPAGE_SHOWREADME_LINK ${LANG_ENGLISH}                  "http://www.quakeworld.nu/forum"
+LangString FINISHPAGE_SHOWREADME_TEXT ${LANG_ENGLISH}                  "Visit the leading QuakeWorld® Community Site"
+LangString FINISHPAGE_SHOWREADME_LINK ${LANG_ENGLISH}                  "http://www.quakeworld.nu"
 # Sections
 LangString NQUAKE ${LANG_ENGLISH}                                      "QuakeWorld"
 LangString FROGBOT ${LANG_ENGLISH}                                     "Bot System"
-LangString EYECANDY ${LANG_ENGLISH}                                    "Improved Visuals"
+LangString EYECANDY ${LANG_ENGLISH}                                    "Enhanced Graphics"
 LangString MAPS ${LANG_ENGLISH}                                        "Additional Levels"
 LangString DEMOS ${LANG_ENGLISH}                                       "Match Demos"
 # Section descriptions
 LangString DESC_NQUAKE ${LANG_ENGLISH}                                 "The most basic files you need to be able to play QuakeWorld."
 LangString DESC_FROGBOT ${LANG_ENGLISH}                                "Play against a computer controlled opponent when your friends don't have time for games."
-LangString DESC_EYECANDY ${LANG_ENGLISH}                               "These stunningly improved visuals take QuakeWorld graphics into the 21st century."
+LangString DESC_EYECANDY ${LANG_ENGLISH}                               "These enhanced graphics take QuakeWorld into the 21st century."
 LangString DESC_MAPS ${LANG_ENGLISH}                                   "Custom developed multiplayer levels. Enjoy QuakeWorld on levels which were originally designed for multiplay."
 LangString DESC_DEMOS ${LANG_ENGLISH}                                  "Crack a beer open and enjoy these incredibly fast-paced games which truly demonstrates the superiority of QuakeWorld."
 # Shortcuts
@@ -65,4 +65,5 @@ LangString SHORT_NEWS ${LANG_ENGLISH}                                  "Latest N
 LangString SHORT_FORUM ${LANG_ENGLISH}                                 "Message Board"
 LangString SHORT_SERVERS ${LANG_ENGLISH}                               "List of Servers"
 LangString SHORT_DEMOS ${LANG_ENGLISH}                                 "Match Demos"
+LangString SHORT_GFX ${LANG_ENGLISH}                                   "Custom Graphics"
 LangString SHORT_UNINSTALL ${LANG_ENGLISH}                             "Uninstall nQuake"

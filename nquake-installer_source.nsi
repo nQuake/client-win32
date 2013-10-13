@@ -1,8 +1,8 @@
 ;nQuake NSIS Online Installer Script
-;By Empezar 2007-05-31; Last modified 2007-07-02
+;By Empezar 2007-05-31; Last modified 2007-07-03
 
-!define VERSION "1.0"
-!define SHORTVERSION "10"
+!define VERSION "1.01"
+!define SHORTVERSION "101"
 
 Name "nQuake"
 OutFile "nquake${SHORTVERSION}_installer.exe"
@@ -240,9 +240,9 @@ Section "" # Clean up installation
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\$(^Name)" "DisplayIcon" "$INSTDIR\uninstall.exe"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\$(^Name)" "UninstallString" "$INSTDIR\uninstall.exe"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\$(^Name)" "Publisher" "The nQuake Team"
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\$(^Name)" "URLUpdateInfo" "http://sourceforge.net/project/showfiles.php?group_id=165445"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\$(^Name)" "URLUpdateInfo" "http://sourceforge.net/project/showfiles.php?group_id=197706"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\$(^Name)" "URLInfoAbout" "http://nquake.sourceforge.net/"
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\$(^Name)" "HelpLink" "http://sourceforge.net/forum/forum.php?forum_id=562763"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\$(^Name)" "HelpLink" "http://sourceforge.net/forum/forum.php?forum_id=702198"
   WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\$(^Name)" "NoModify" "1"
   WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\$(^Name)" "NoRepair" "1"
 
@@ -761,6 +761,7 @@ Function .createStartMenuItems
     WriteINIStr "$SMPROGRAMS\$STARTMENU_FOLDER\Links\$(SHORT_FORUM).url" "InternetShortcut" "URL" "http://www.quakeworld.nu/forum/"
     WriteINIStr "$SMPROGRAMS\$STARTMENU_FOLDER\Links\$(SHORT_SERVERS).url" "InternetShortcut" "URL" "http://www.quakeservers.net/quakeworld/servers/pl=1/so=8/"
     WriteINIStr "$SMPROGRAMS\$STARTMENU_FOLDER\Links\$(SHORT_DEMOS).url" "InternetShortcut" "URL" "http://www.challenge-tv.com/index.php?mode=demos&game=2"
+    WriteINIStr "$SMPROGRAMS\$STARTMENU_FOLDER\Links\$(SHORT_GFX).url" "InternetShortcut" "URL" "http://gfx.qwdrama.com/"
 
     CreateShortCut "$SMPROGRAMS\$STARTMENU_FOLDER\$(SHORT_EZQUAKE).lnk" "$INSTDIR\ezquake-gl.exe" "" "$INSTDIR\ezquake-gl.exe" 0
     CreateShortCut "$SMPROGRAMS\$STARTMENU_FOLDER\$(SHORT_UNINSTALL).lnk" "$INSTDIR\uninstall.exe" "" "$INSTDIR\uninstall.exe" 0
@@ -793,14 +794,13 @@ Function .cleanupInstallation
       FileWrite $DISTLOG $0
     ${LoopUntil} ${Errors}
     FileClose $R0
+    # Copy the downloaded distfiledates.ini to the distfiles directory
+    # IF the installer was set to update old distfiles
+    ${If} $DISTFILES_UPDATE == 1
+      CopyFiles $DISTFILEDATES_INI "$DISTFILES_PATH\${DISTFILEDATES_INI}"
+      FileWrite $DISTLOG "${DISTFILEDATES_INI}$\r$\n"
+    ${EndIf}
   FileClose $DISTLOG
-
-  # Copy the downloaded distfiledates.ini to the distfiles directory
-  # IF the installer was set to update old distfiles
-  ${If} $DISTFILES_UPDATE == 1
-    CopyFiles $DISTFILEDATES_INI "$DISTFILES_PATH\${DISTFILEDATES_INI}"
-    FileWrite $DISTLOG "${DISTFILEDATES_INI}$\r$\n"
-  ${EndIf}
 
   # If distfiles.log exists, ask to remove downloaded distfiles
   ${If} ${FileExists} "$DISTFILES_PATH\${DISTLOG}"
