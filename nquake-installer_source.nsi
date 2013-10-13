@@ -1,8 +1,8 @@
 ;nQuake NSIS Online Installer Script
-;By Empezar 2007-05-31; Last modified 2007-08-02
+;By Empezar 2007-05-31; Last modified 2007-08-06
 
-!define VERSION "1.7a"
-!define SHORTVERSION "17a"
+!define VERSION "1.7b"
+!define SHORTVERSION "17b"
 
 Name "nQuake"
 OutFile "nquake${SHORTVERSION}_installer.exe"
@@ -684,6 +684,34 @@ Function FULLVERSION
   ${EndIf}
   ${If} ${FileExists} "C:\Program Files\nQuake\id1\pak1.pak"
     StrCpy $0 "C:\Program Files\nQuake\id1"
+    !insertmacro ValidatePak $0
+  ${EndIf}
+  ${If} ${FileExists} "C:\Valve\Steam\SteamApps\common\Quake\ID1\pak1.pak"
+    StrCpy $0 "C:\Valve\Steam\SteamApps\common\Quake\ID1"
+    !insertmacro ValidatePak $0
+  ${EndIf}
+  ${If} ${FileExists} "D:\Valve\Steam\SteamApps\common\Quake\ID1\pak1.pak"
+    StrCpy $0 "D:\Valve\Steam\SteamApps\common\Quake\ID1"
+    !insertmacro ValidatePak $0
+  ${EndIf}
+  ${If} ${FileExists} "E:\Valve\Steam\SteamApps\common\Quake\ID1\pak1.pak"
+    StrCpy $0 "E:\Valve\Steam\SteamApps\common\Quake\ID1"
+    !insertmacro ValidatePak $0
+  ${EndIf}
+  ${If} ${FileExists} "C:\Steam\SteamApps\common\Quake\ID1\pak1.pak"
+    StrCpy $0 "C:\Steam\SteamApps\common\Quake\ID1"
+    !insertmacro ValidatePak $0
+  ${EndIf}
+  ${If} ${FileExists} "D:\Steam\SteamApps\common\Quake\ID1\pak1.pak"
+    StrCpy $0 "D:\Steam\SteamApps\common\Quake\ID1"
+    !insertmacro ValidatePak $0
+  ${EndIf}
+  ${If} ${FileExists} "E:\Steam\SteamApps\common\Quake\ID1\pak1.pak"
+    StrCpy $0 "E:\Steam\SteamApps\common\Quake\ID1"
+    !insertmacro ValidatePak $0
+  ${EndIf}
+  ${If} ${FileExists} "C:\Program Files\Valve\Steam\SteamApps\common\Quake\ID1\pak1.pak"
+    StrCpy $0 "C:\Program Files\Valve\Steam\SteamApps\common\Quake\ID1"
     !insertmacro ValidatePak $0
   ${Else}
     Goto FullVersionEnd
