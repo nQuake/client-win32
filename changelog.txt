@@ -1,3 +1,7 @@
+2013-01-05 - nQuake v2.3 for Windows
+
+* Added basic configuration window during setup.
+
 2012-12-29 - nQuake v2.2 for Windows
 
 * New installer welcome screen!
