@@ -1,3 +1,9 @@
+2012-08-16 - nQuake v2.0 for Windows
+
+* Changed the installer graphics.
+* Reduced the amount of distfiles.
+* Removed pak1.pak selection screen.
+
 2010-06-06 - nQuake v1.9a for Windows
 
 * Changed Quake steam link and updated cost.

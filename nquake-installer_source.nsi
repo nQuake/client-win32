@@ -1,8 +1,8 @@
 ;nQuake NSIS Online Installer Script
-;By Empezar 2007-05-31; Last modified 2010-06-06
+;By Empezar 2007-05-31; Last modified 2012-08-16
 
-!define VERSION "1.9a"
-!define SHORTVERSION "19a"
+!define VERSION "2.0"
+!define SHORTVERSION "20"
 
 Name "nQuake"
 OutFile "nquake${SHORTVERSION}_installer.exe"
@@ -51,7 +51,6 @@ Var INSTLOGTMP
 Var INSTSIZE
 Var NQUAKE_INI
 Var OFFLINE
-Var PAK_LOCATION
 Var REMOVE_ALL_FILES
 Var REMOVE_MODIFIED_FILES
 Var RETRIES
@@ -61,8 +60,8 @@ Var STARTMENU_FOLDER
 ;----------------------------------------------------
 ;Interface Settings
 
-!define MUI_ICON "quake.ico"
-!define MUI_UNICON "quake.ico"
+!define MUI_ICON "nquake.ico"
+!define MUI_UNICON "nquake.ico"
 
 !define MUI_WELCOMEFINISHPAGE_BITMAP "nquake-welcomefinish.bmp"
 
@@ -78,8 +77,6 @@ Var STARTMENU_FOLDER
 
 LicenseForceSelection checkbox "I agree to these terms and conditions"
 !insertmacro MUI_PAGE_LICENSE "license.txt"
-
-Page custom FULLVERSION
 
 Page custom DISTFILEFOLDER
 
@@ -97,11 +94,10 @@ ShowInstDetails "nevershow"
 Page custom ERRORS
 
 !define MUI_PAGE_CUSTOMFUNCTION_SHOW "FinishShow"
-!define MUI_FINISHPAGE_RUN "$INSTDIR/ezquake-gl.exe"
-!define MUI_FINISHPAGE_RUN_TEXT "Launch QuakeWorld"
-!define MUI_FINISHPAGE_SHOWREADME "http://www.quakeworld.nu"
-!define MUI_FINISHPAGE_SHOWREADME_NOTCHECKED
-!define MUI_FINISHPAGE_SHOWREADME_TEXT "Visit the leading QuakeWorld community site"
+!define MUI_FINISHPAGE_LINK "Click here to visit the QuakeWorld portal"
+!define MUI_FINISHPAGE_LINK_LOCATION "http://www.quakeworld.nu/"
+!define MUI_FINISHPAGE_SHOWREADME "$INSTDIR/readme.txt"
+!define MUI_FINISHPAGE_SHOWREADME_TEXT "Open readme"
 !define MUI_FINISHPAGE_NOREBOOTSUPPORT
 !insertmacro MUI_PAGE_FINISH
 
@@ -127,7 +123,6 @@ LangString ^SpaceRequired ${LANG_ENGLISH} "Download size: "
 ;----------------------------------------------------
 ;Reserve Files
 
-ReserveFile "fullversion.ini"
 ReserveFile "distfilefolder.ini"
 ReserveFile "mirrorselect.ini"
 ReserveFile "association.ini"
@@ -150,7 +145,6 @@ Section "" # Prepare installation
   !insertmacro MUI_INSTALLOPTIONS_READ $DISTFILES_PATH "distfilefolder.ini" "Field 3" "State"
   !insertmacro MUI_INSTALLOPTIONS_READ $DISTFILES_UPDATE "distfilefolder.ini" "Field 4" "State"
   !insertmacro MUI_INSTALLOPTIONS_READ $DISTFILES_DELETE "distfilefolder.ini" "Field 5" "State"
-  !insertmacro MUI_INSTALLOPTIONS_READ $PAK_LOCATION "fullversion.ini" "Field 3" "State"
   !insertmacro MUI_INSTALLOPTIONS_READ $ASSOCIATE_FILES "association.ini" "Field 2" "State"
 
   # Create distfiles folder if it doesn't already exist
@@ -159,34 +153,13 @@ Section "" # Prepare installation
   ${EndUnless}
 
   # Calculate the installation size
-  ${If} ${FileExists} $PAK_LOCATION
-  ${AndUnless} ${FileExists} "$INSTDIR\id1\pak1.pak"
-    # pak1.pak is 14722kb zipped
-    IntOp $INSTSIZE $INSTSIZE + 14722
-  ${EndIf}
   ${Unless} ${FileExists} "$INSTDIR\ID1\PAK0.PAK"
     ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "qsw106.zip"
     IntOp $INSTSIZE $INSTSIZE + $0
   ${EndUnless}
-  ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "misc.zip"
+  ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "gpl.zip"
   IntOp $INSTSIZE $INSTSIZE + $0
-  ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "misc_gpl.zip"
-  IntOp $INSTSIZE $INSTSIZE + $0
-  ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "ezquake.zip"
-  IntOp $INSTSIZE $INSTSIZE + $0
-  ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "frogbot.zip"
-  IntOp $INSTSIZE $INSTSIZE + $0
-  ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "textures.zip"
-  IntOp $INSTSIZE $INSTSIZE + $0
-  ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "models.zip"
-  IntOp $INSTSIZE $INSTSIZE + $0
-  ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "skins.zip"
-  IntOp $INSTSIZE $INSTSIZE + $0
-  ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "lits.zip"
-  IntOp $INSTSIZE $INSTSIZE + $0
-  ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "maps.zip"
-  IntOp $INSTSIZE $INSTSIZE + $0
-  ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "demos.zip"
+  ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "non-gpl.zip"
   IntOp $INSTSIZE $INSTSIZE + $0
 
   # Find out what mirror was selected
@@ -245,57 +218,35 @@ SectionEnd
 Section "nQuake" NQUAKE
 
   # Download and install pak0.pak (shareware data)
-  ${Unless} ${FileExists} "$INSTDIR\ID1\PAK0.PAK"
-    StrCpy $0 $PAK_LOCATION -8
-	${If} ${FileExists} "$0\pak0.pak"
-	  CreateDirectory "$INSTDIR\ID1"
-	  CopyFiles /SILENT "$0\pak0.pak" "$INSTDIR\ID1\PAK0.PAK"
-	${Else}
-      !insertmacro InstallSection qsw106.zip "Quake shareware"
-	  # Remove crap files extracted from shareware zip
-      Delete "$INSTDIR\CWSDPMI.EXE"
-      Delete "$INSTDIR\QLAUNCH.EXE"
-      Delete "$INSTDIR\QUAKE.EXE"
-      Delete "$INSTDIR\GENVXD.DLL"
-      Delete "$INSTDIR\QUAKEUDP.DLL"
-      Delete "$INSTDIR\PDIPX.COM"
-      Delete "$INSTDIR\Q95.BAT"
-      Delete "$INSTDIR\COMEXP.TXT"
-      Delete "$INSTDIR\HELP.TXT"
-      Delete "$INSTDIR\LICINFO.TXT"
-      Delete "$INSTDIR\MANUAL.TXT"
-      Delete "$INSTDIR\ORDER.TXT"
-      Delete "$INSTDIR\README.TXT"
-      Delete "$INSTDIR\READV106.TXT"
-      Delete "$INSTDIR\SLICNSE.TXT"
-      Delete "$INSTDIR\TECHINFO.TXT"
-      Delete "$INSTDIR\MGENVXD.VXD"
-	${EndIf}
-    # Add to installed size
-    ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "qsw106.zip"
-    IntOp $INSTALLED $INSTALLED + $0
-    # Set progress bar
-    IntOp $0 $INSTALLED * 100
-    IntOp $0 $0 / $INSTSIZE
-    RealProgress::SetProgress /NOUNLOAD $0
-  ${EndUnless}
+  !insertmacro InstallSection qsw106.zip "Quake shareware"
+  # Remove crap files extracted from shareware zip
+  Delete "$INSTDIR\CWSDPMI.EXE"
+  Delete "$INSTDIR\QLAUNCH.EXE"
+  Delete "$INSTDIR\QUAKE.EXE"
+  Delete "$INSTDIR\GENVXD.DLL"
+  Delete "$INSTDIR\QUAKEUDP.DLL"
+  Delete "$INSTDIR\PDIPX.COM"
+  Delete "$INSTDIR\Q95.BAT"
+  Delete "$INSTDIR\COMEXP.TXT"
+  Delete "$INSTDIR\HELP.TXT"
+  Delete "$INSTDIR\LICINFO.TXT"
+  Delete "$INSTDIR\MANUAL.TXT"
+  Delete "$INSTDIR\ORDER.TXT"
+  Delete "$INSTDIR\README.TXT"
+  Delete "$INSTDIR\READV106.TXT"
+  Delete "$INSTDIR\SLICNSE.TXT"
+  Delete "$INSTDIR\TECHINFO.TXT"
+  Delete "$INSTDIR\MGENVXD.VXD"
+  # Add to installed size
+  ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "qsw106.zip"
+  IntOp $INSTALLED $INSTALLED + $0
+  # Set progress bar
+  IntOp $0 $INSTALLED * 100
+  IntOp $0 $0 / $INSTSIZE
+  RealProgress::SetProgress /NOUNLOAD $0
   Rename "$INSTDIR\ID1" "$INSTDIR\id1"
   Rename "$INSTDIR\id1\PAK0.PAK" "$INSTDIR\id1\pak0.pak"
   FileWrite $INSTLOG "id1\pak0.pak$\r$\n"
-
-  # Copy pak1.pak if it was found or specified (registered data), and doesn't already exist
-  ${If} ${FileExists} $PAK_LOCATION
-  ${AndUnless} ${FileExists} "$INSTDIR\id1\pak1.pak"
-    # Copy pak1.pak
-    CopyFiles /SILENT $PAK_LOCATION "$INSTDIR\id1\pak1.pak"
-    FileWrite $INSTLOG "id1\pak1.pak$\r$\n"
-    # Add to installed size (pak1.pak is 14722kb zipped)
-    IntOp $INSTALLED $INSTALLED + 14722
-    # Set progress bar (post pak1.pak)
-    IntOp $0 $INSTALLED * 100
-    IntOp $0 $0 / $INSTSIZE
-    RealProgress::SetProgress /NOUNLOAD $0
-  ${EndIf}
 
   # Backup old configs if such exist
   ${If} ${FileExists} "$INSTDIR\ezquake\configs\config.cfg"
@@ -308,100 +259,20 @@ Section "nQuake" NQUAKE
     Rename "$INSTDIR\ezquake\configs\config.cfg" "$INSTDIR\ezquake\configs\config-$1.cfg"
   ${EndIf}
 
-  # Download and install basic files (non-gpl)
-  !insertmacro InstallSection misc.zip "basic files (1 of 2)"
+  # Download and install GPL files
+  !insertmacro InstallSection gpl.zip "nQuake setup files (1 of 2)"
   # Add to installed size
-  ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "misc.zip"
+  ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "gpl.zip"
   IntOp $INSTALLED $INSTALLED + $0
   # Set progress bar
   IntOp $0 $INSTALLED * 100
   IntOp $0 $0 / $INSTSIZE
   RealProgress::SetProgress /NOUNLOAD $0
 
-  # Download and install basic files (gpl)
-  !insertmacro InstallSection misc_gpl.zip "basic files (2 of 2)"
+  # Download and install non-GPL files
+  !insertmacro InstallSection non-gpl.zip "nQuake setup files (2 of 2)"
   # Add to installed size
-  ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "misc_gpl.zip"
-  IntOp $INSTALLED $INSTALLED + $0
-  # Set progress bar
-  IntOp $0 $INSTALLED * 100
-  IntOp $0 $0 / $INSTSIZE
-  RealProgress::SetProgress /NOUNLOAD $0
-  
-  # Download and install ezQuake
-  !insertmacro InstallSection ezquake.zip "ezQuake"
-  # Add to installed size
-  ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "ezquake.zip"
-  IntOp $INSTALLED $INSTALLED + $0
-  # Set progress bar
-  IntOp $0 $INSTALLED * 100
-  IntOp $0 $0 / $INSTSIZE
-  RealProgress::SetProgress /NOUNLOAD $0
-
-  # Download and install textures
-  !insertmacro InstallSection textures.zip "textures"
-  # Add to installed size
-  ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "textures.zip"
-  IntOp $INSTALLED $INSTALLED + $0
-  # Set progress bar
-  IntOp $0 $INSTALLED * 100
-  IntOp $0 $0 / $INSTSIZE
-  RealProgress::SetProgress /NOUNLOAD $0
-
-  # Download and install models
-  !insertmacro InstallSection models.zip "models"
-  # Add to installed size
-  ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "models.zip"
-  IntOp $INSTALLED $INSTALLED + $0
-  # Set progress bar
-  IntOp $0 $INSTALLED * 100
-  IntOp $0 $0 / $INSTSIZE
-  RealProgress::SetProgress /NOUNLOAD $0
-
-  # Download and install skins
-  !insertmacro InstallSection skins.zip "skins"
-  # Add to installed size
-  ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "skins.zip"
-  IntOp $INSTALLED $INSTALLED + $0
-  # Set progress bar
-  IntOp $0 $INSTALLED * 100
-  IntOp $0 $0 / $INSTSIZE
-  RealProgress::SetProgress /NOUNLOAD $0
-  
-  # Download and install enhanced lighting files
-  !insertmacro InstallSection lits.zip "lighting files"
-  # Add to installed size
-  ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "lits.zip"
-  IntOp $INSTALLED $INSTALLED + $0
-  # Set progress bar
-  IntOp $0 $INSTALLED * 100
-  IntOp $0 $0 / $INSTSIZE
-  RealProgress::SetProgress /NOUNLOAD $0
-  
-  # Download and install frogbot
-  !insertmacro InstallSection frogbot.zip "frogbot"
-  # Add to installed size
-  ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "frogbot.zip"
-  IntOp $INSTALLED $INSTALLED + $0
-  # Set progress bar
-  IntOp $0 $INSTALLED * 100
-  IntOp $0 $0 / $INSTSIZE
-  RealProgress::SetProgress /NOUNLOAD $0
-
-  # Download and install custom maps
-  !insertmacro InstallSection maps.zip "maps"
-  # Add to installed size
-  ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "maps.zip"
-  IntOp $INSTALLED $INSTALLED + $0
-  # Set progress bar
-  IntOp $0 $INSTALLED * 100
-  IntOp $0 $0 / $INSTSIZE
-  RealProgress::SetProgress /NOUNLOAD $0
-
-  # Download and install demos
-  !insertmacro InstallSection demos.zip "demos"
-  # Add to installed size
-  ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "demos.zip"
+  ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "non-gpl.zip"
   IntOp $INSTALLED $INSTALLED + $0
   # Set progress bar
   IntOp $0 $INSTALLED * 100
@@ -627,167 +498,6 @@ SectionEnd
 ;----------------------------------------------------
 ;Custom Pages
 
-Function FULLVERSION
-
-  !insertmacro MUI_INSTALLOPTIONS_EXTRACT "fullversion.ini"
-  !insertmacro MUI_HEADER_TEXT "Full Version Quake Data" "Find pak1.pak for inclusion in nQuake."
-
-  # Look for pak1.pak in 28 likely locations
-  ${If} ${FileExists} "C:\Quake\id1\pak1.pak"
-    StrCpy $0 "C:\Quake\id1"
-    !insertmacro ValidatePak $0
-  ${EndIf}
-  ${If} ${FileExists} "D:\Quake\id1\pak1.pak"
-    StrCpy $0 "D:\Quake\id1"
-    !insertmacro ValidatePak $0
-  ${EndIf}
-  ${If} ${FileExists} "E:\Quake\id1\pak1.pak"
-    StrCpy $0 "E:\Quake\id1"
-    !insertmacro ValidatePak $0
-  ${EndIf}
-  ${If} ${FileExists} "C:\Games\Quake\id1\pak1.pak"
-    StrCpy $0 "C:\Games\Quake\id1"
-    !insertmacro ValidatePak $0
-  ${EndIf}
-  ${If} ${FileExists} "D:\Games\Quake\id1\pak1.pak"
-    StrCpy $0 "D:\Games\Quake\id1"
-    !insertmacro ValidatePak $0
-  ${EndIf}
-  ${If} ${FileExists} "E:\Games\Quake\id1\pak1.pak"
-    StrCpy $0 "E:\Games\Quake\id1"
-    !insertmacro ValidatePak $0
-  ${EndIf}
-  ${If} ${FileExists} "C:\Program Files\Quake\id1\pak1.pak"
-    StrCpy $0 "C:\Program Files\Quake\id1"
-    !insertmacro ValidatePak $0
-  ${EndIf}
-  ${If} ${FileExists} "C:\eQuake\id1\pak1.pak"
-    StrCpy $0 "C:\eQuake\id1"
-    !insertmacro ValidatePak $0
-  ${EndIf}
-  ${If} ${FileExists} "D:\eQuake\id1\pak1.pak"
-    StrCpy $0 "D:\eQuake\id1"
-    !insertmacro ValidatePak $0
-  ${EndIf}
-  ${If} ${FileExists} "E:\eQuake\id1\pak1.pak"
-    StrCpy $0 "E:\eQuake\id1"
-    !insertmacro ValidatePak $0
-  ${EndIf}
-  ${If} ${FileExists} "C:\Games\eQuake\id1\pak1.pak"
-    StrCpy $0 "C:\Games\eQuake\id1"
-    !insertmacro ValidatePak $0
-  ${EndIf}
-  ${If} ${FileExists} "D:\Games\eQuake\id1\pak1.pak"
-    StrCpy $0 "D:\Games\eQuake\id1"
-    !insertmacro ValidatePak $0
-  ${EndIf}
-  ${If} ${FileExists} "E:\Games\eQuake\id1\pak1.pak"
-    StrCpy $0 "E:\Games\eQuake\id1"
-    !insertmacro ValidatePak $0
-  ${EndIf}
-  ${If} ${FileExists} "C:\Program Files\eQuake\id1\pak1.pak"
-    StrCpy $0 "C:\Program Files\eQuake\id1"
-    !insertmacro ValidatePak $0
-  ${EndIf}
-  ${If} ${FileExists} "C:\fQuake\id1\pak1.pak"
-    StrCpy $0 "C:\fQuake\id1"
-    !insertmacro ValidatePak $0
-  ${EndIf}
-  ${If} ${FileExists} "D:\fQuake\id1\pak1.pak"
-    StrCpy $0 "D:\fQuake\id1"
-    !insertmacro ValidatePak $0
-  ${EndIf}
-  ${If} ${FileExists} "E:\fQuake\id1\pak1.pak"
-    StrCpy $0 "E:\fQuake\id1"
-    !insertmacro ValidatePak $0
-  ${EndIf}
-  ${If} ${FileExists} "C:\Games\fQuake\id1\pak1.pak"
-    StrCpy $0 "C:\Games\fQuake\id1"
-    !insertmacro ValidatePak $0
-  ${EndIf}
-  ${If} ${FileExists} "D:\Games\fQuake\id1\pak1.pak"
-    StrCpy $0 "D:\Games\fQuake\id1"
-    !insertmacro ValidatePak $0
-  ${EndIf}
-  ${If} ${FileExists} "E:\Games\fQuake\id1\pak1.pak"
-    StrCpy $0 "E:\Games\fQuake\id1"
-    !insertmacro ValidatePak $0
-  ${EndIf}
-  ${If} ${FileExists} "C:\Program Files\fQuake\id1\pak1.pak"
-    StrCpy $0 "C:\Program Files\fQuake\id1"
-    !insertmacro ValidatePak $0
-  ${EndIf}
-  ${If} ${FileExists} "C:\nQuake\id1\pak1.pak"
-    StrCpy $0 "C:\nQuake\id1"
-    !insertmacro ValidatePak $0
-  ${EndIf}
-  ${If} ${FileExists} "D:\nQuake\id1\pak1.pak"
-    StrCpy $0 "D:\nQuake\id1"
-    !insertmacro ValidatePak $0
-  ${EndIf}
-  ${If} ${FileExists} "E:\nQuake\id1\pak1.pak"
-    StrCpy $0 "E:\nQuake\id1"
-    !insertmacro ValidatePak $0
-  ${EndIf}
-  ${If} ${FileExists} "C:\Games\nQuake\id1\pak1.pak"
-    StrCpy $0 "C:\Games\nQuake\id1"
-    !insertmacro ValidatePak $0
-  ${EndIf}
-  ${If} ${FileExists} "D:\Games\nQuake\id1\pak1.pak"
-    StrCpy $0 "D:\Games\nQuake\id1"
-    !insertmacro ValidatePak $0
-  ${EndIf}
-  ${If} ${FileExists} "E:\Games\nQuake\id1\pak1.pak"
-    StrCpy $0 "E:\Games\nQuake\id1"
-    !insertmacro ValidatePak $0
-  ${EndIf}
-  ${If} ${FileExists} "C:\Program Files\nQuake\id1\pak1.pak"
-    StrCpy $0 "C:\Program Files\nQuake\id1"
-    !insertmacro ValidatePak $0
-  ${EndIf}
-  ${If} ${FileExists} "C:\Valve\Steam\SteamApps\common\Quake\ID1\pak1.pak"
-    StrCpy $0 "C:\Valve\Steam\SteamApps\common\Quake\ID1"
-    !insertmacro ValidatePak $0
-  ${EndIf}
-  ${If} ${FileExists} "D:\Valve\Steam\SteamApps\common\Quake\ID1\pak1.pak"
-    StrCpy $0 "D:\Valve\Steam\SteamApps\common\Quake\ID1"
-    !insertmacro ValidatePak $0
-  ${EndIf}
-  ${If} ${FileExists} "E:\Valve\Steam\SteamApps\common\Quake\ID1\pak1.pak"
-    StrCpy $0 "E:\Valve\Steam\SteamApps\common\Quake\ID1"
-    !insertmacro ValidatePak $0
-  ${EndIf}
-  ${If} ${FileExists} "C:\Steam\SteamApps\common\Quake\ID1\pak1.pak"
-    StrCpy $0 "C:\Steam\SteamApps\common\Quake\ID1"
-    !insertmacro ValidatePak $0
-  ${EndIf}
-  ${If} ${FileExists} "D:\Steam\SteamApps\common\Quake\ID1\pak1.pak"
-    StrCpy $0 "D:\Steam\SteamApps\common\Quake\ID1"
-    !insertmacro ValidatePak $0
-  ${EndIf}
-  ${If} ${FileExists} "E:\Steam\SteamApps\common\Quake\ID1\pak1.pak"
-    StrCpy $0 "E:\Steam\SteamApps\common\Quake\ID1"
-    !insertmacro ValidatePak $0
-  ${EndIf}
-  ${If} ${FileExists} "C:\Program Files\Valve\Steam\SteamApps\common\Quake\ID1\pak1.pak"
-    StrCpy $0 "C:\Program Files\Valve\Steam\SteamApps\common\Quake\ID1"
-    !insertmacro ValidatePak $0
-  ${Else}
-    Goto FullVersionEnd
-  ${EndIf}
-
-  FullVersion:
-  !insertmacro MUI_INSTALLOPTIONS_WRITE "fullversion.ini" "Field 1" "Text" "The full version of Quake is not included in this package. However, setup has found what resembles the full version pak1.pak on your harddrive. If this is not the correct file, click Browse to locate the correct pak1.pak. Click Next to continue."
-  !insertmacro MUI_INSTALLOPTIONS_WRITE "fullversion.ini" "Field 3" "State" "$0\pak1.pak"
-  FullVersionEnd:
-  # Remove the purchase link if the installer is in offline mode
-  ${If} $OFFLINE == 1
-    !insertmacro MUI_INSTALLOPTIONS_WRITE "fullversion.ini" "Field 4" "Type" ""
-  ${EndIf}
-  !insertmacro MUI_INSTALLOPTIONS_DISPLAY "fullversion.ini"
-
-FunctionEnd
-
 Function DISTFILEFOLDER
 
   !insertmacro MUI_INSTALLOPTIONS_EXTRACT "distfilefolder.ini"
@@ -968,25 +678,9 @@ Function .onInit
   # Determine sizes on all the sections
   !insertmacro DetermineSectionSize qsw106.zip
   IntOp $1 0 + $SIZE
-  !insertmacro DetermineSectionSize misc.zip
+  !insertmacro DetermineSectionSize gpl.zip
   IntOp $1 $1 + $SIZE
-  !insertmacro DetermineSectionSize misc_gpl.zip
-  IntOp $1 $1 + $SIZE
-  !insertmacro DetermineSectionSize ezquake.zip
-  IntOp $1 $1 + $SIZE
-  !insertmacro DetermineSectionSize textures.zip
-  IntOp $1 $1 + $SIZE
-  !insertmacro DetermineSectionSize models.zip
-  IntOp $1 $1 + $SIZE
-  !insertmacro DetermineSectionSize skins.zip
-  IntOp $1 $1 + $SIZE
-  !insertmacro DetermineSectionSize lits.zip
-  IntOp $1 $1 + $SIZE
-  !insertmacro DetermineSectionSize frogbot.zip
-  IntOp $1 $1 + $SIZE
-  !insertmacro DetermineSectionSize maps.zip
-  IntOp $1 $1 + $SIZE
-  !insertmacro DetermineSectionSize demos.zip
+  !insertmacro DetermineSectionSize non-gpl.zip
   IntOp $1 $1 + $SIZE
   SectionSetSize ${NQUAKE} $1
 
