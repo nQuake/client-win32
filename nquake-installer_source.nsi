@@ -1,8 +1,8 @@
 ;nQuake NSIS Online Installer Script
-;By Empezar 2007-05-31; Last modified 2007-07-31
+;By Empezar 2007-05-31; Last modified 2007-08-02
 
-!define VERSION "1.7"
-!define SHORTVERSION "17"
+!define VERSION "1.7a"
+!define SHORTVERSION "17a"
 
 Name "nQuake"
 OutFile "nquake${SHORTVERSION}_installer.exe"
@@ -431,7 +431,7 @@ Section "" # Clean up installation
   # Copy nquake.ini to the distfiles directory if "update distfiles" was set
   ${ElseIf} $DISTFILES_UPDATE == 1
     FlushINI $NQUAKE_INI
-    Rename $NQUAKE_INI "$DISTFILES_PATH\nquake.ini"
+    CopyFiles $NQUAKE_INI "$DISTFILES_PATH\nquake.ini"
     FileWrite $DISTLOG "nquake.ini$\r$\n"
   ${EndIf}
 
