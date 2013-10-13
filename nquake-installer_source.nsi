@@ -1,8 +1,8 @@
 ;nQuake NSIS Online Installer Script
-;By Empezar 2007-05-31; Last modified 2013-10-10
+;By Empezar 2007-05-31; Last modified 2013-10-13
 
-!define VERSION "2.5"
-!define SHORTVERSION "25"
+!define VERSION "2.6"
+!define SHORTVERSION "26"
 
 Name "nQuake"
 OutFile "nquake${SHORTVERSION}_installer.exe"
@@ -20,6 +20,7 @@ InstallDirRegKey HKCU "Software\nQuake" "Install_Dir"
 ;Header Files
 
 !include "MUI.nsh"
+!include "Win\COM.nsh"
 !include "FileAssociation.nsh"
 !include "FileFunc.nsh"
 !insertmacro GetSize
@@ -36,6 +37,10 @@ InstallDirRegKey HKCU "Software\nQuake" "Install_Dir"
 ;----------------------------------------------------
 ;Variables
 
+Var ADDON_CLANARENA
+Var ADDON_FORTRESS
+Var ADDON_TEXTURES
+Var ASSOCIATE_FILES
 Var CONFIG_NAME
 Var CONFIG_INVERT
 Var CONFIG_FORWARD
@@ -95,6 +100,8 @@ Page custom CONFIG
 
 Page custom ADDONS
 
+Page custom ASSOCIATION
+
 DirText "Setup will install nQuake in the following folder. To install in a different folder, click Browse and select another folder. Click Next to continue.$\r$\n$\r$\nIt is NOT ADVISABLE to install in the Program Files folder." "Destination Folder" "Browse" "Select the folder to install nQuake in:"
 !define MUI_PAGE_CUSTOMFUNCTION_SHOW DirectoryPageShow
 !insertmacro MUI_PAGE_DIRECTORY
@@ -139,6 +146,8 @@ LangString ^SpaceRequired ${LANG_ENGLISH} "Download size: "
 
 ReserveFile "config.ini"
 ReserveFile "download.ini"
+ReserveFile "addons.ini"
+ReserveFile "association.ini"
 ReserveFile "errors.ini"
 ReserveFile "uninstall.ini"
 
@@ -165,6 +174,10 @@ Section "" # Prepare installation
   !insertmacro MUI_INSTALLOPTIONS_READ $CONFIG_MOVELEFT "config.ini" "Field 13" "State"
   !insertmacro MUI_INSTALLOPTIONS_READ $CONFIG_MOVERIGHT "config.ini" "Field 15" "State"
   !insertmacro MUI_INSTALLOPTIONS_READ $CONFIG_JUMP "config.ini" "Field 17" "State"
+  !insertmacro MUI_INSTALLOPTIONS_READ $ADDON_FORTRESS "addons.ini" "Field 3" "State"
+  !insertmacro MUI_INSTALLOPTIONS_READ $ADDON_CLANARENA "addons.ini" "Field 4" "State"
+  !insertmacro MUI_INSTALLOPTIONS_READ $ADDON_TEXTURES "addons.ini" "Field 6" "State"
+  !insertmacro MUI_INSTALLOPTIONS_READ $ASSOCIATE_FILES "association.ini" "Field 3" "State"
 
   # Create distfiles folder if it doesn't already exist
   ${Unless} ${FileExists} "$DISTFILES_PATH\*.*"
@@ -174,6 +187,7 @@ Section "" # Prepare installation
   # Calculate the installation size
   ${Unless} ${FileExists} "$INSTDIR\ID1\PAK0.PAK"
   ${OrUnless} ${FileExists} "$EXEDIR\pak0.pak"
+  ${OrUnless} ${FileExists} "$DISTFILES_PATH\pak0.pak"
     ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "qsw106.zip"
     IntOp $INSTSIZE $INSTSIZE + $0
   ${EndUnless}
@@ -181,18 +195,17 @@ Section "" # Prepare installation
   IntOp $INSTSIZE $INSTSIZE + $0
   ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "non-gpl.zip"
   IntOp $INSTSIZE $INSTSIZE + $0
-  !insertmacro MUI_INSTALLOPTIONS_READ $R0 "addons.ini" "Field 3" "State"
-  ${If} $R0 == 1
+  ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "textures.zip"
+  IntOp $INSTSIZE $INSTSIZE + $0
+  ${If} $ADDON_FORTRESS == 1
     ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "addon-fortress.zip"
     IntOp $INSTSIZE $INSTSIZE + $0
   ${EndIf}
-  !insertmacro MUI_INSTALLOPTIONS_READ $R0 "addons.ini" "Field 4" "State"
-  ${If} $R0 == 1
+  ${If} $ADDON_CLANARENA == 1
     ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "addon-clanarena.zip"
     IntOp $INSTSIZE $INSTSIZE + $0
   ${EndIf}
-  !insertmacro MUI_INSTALLOPTIONS_READ $R0 "addons.ini" "Field 6" "State"
-  ${If} $R0 == 1
+  ${If} $ADDON_TEXTURES == 1
     ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "addon-textures.zip"
     IntOp $INSTSIZE $INSTSIZE + $0
   ${EndIf}
@@ -254,12 +267,20 @@ Section "nQuake" NQUAKE
 
   # Download and install pak0.pak (shareware data) unless pak0.pak can be found alongside the installer executable
   ${If} ${FileExists} "$EXEDIR\pak0.pak"
-    ${GetSize} $EXEDIR "/M=pak0.pak /S=0B /G=0" $7 $8 $9
-    ${If} $7 == "18278619"
-      CreateDirectory "$INSTDIR\id1"
-      CopyFiles "$EXEDIR\pak0.pak" "$INSTDIR\id1\pak0.pak"
-      Goto SkipShareware
+    StrCpy $R0 "$EXEDIR"
+  ${ElseIf} ${FileExists} "$DISTFILES_PATH\pak0.pak"
+    StrCpy $R0 "$DISTFILES_PATH"
+  ${EndIf}
+  ${GetSize} $R0 "/M=pak0.pak /S=0B /G=0" $7 $8 $9
+  ${If} $7 == "18278619"
+    CreateDirectory "$INSTDIR\id1"
+    CopyFiles "$R0\pak0.pak" "$INSTDIR\id1\pak0.pak"
+    # Keep pak0.pak and remove qsw106.zip in distfile folder if DISTFILES_DELETE is 0
+    ${If} $DISTFILES_DELETE == 0
+      CopyFiles "$INSTDIR\id1\pak0.pak" "$DISTFILES_PATH\pak0.pak"
+      Delete "$DISTFILES_PATH\qsw106.zip"
     ${EndIf}
+    Goto SkipShareware
   ${EndIf}
   !insertmacro InstallSection qsw106.zip "Quake shareware"
   # Remove crap files extracted from shareware zip and rename uppercase files/folders
@@ -282,6 +303,11 @@ Section "nQuake" NQUAKE
   Delete "$INSTDIR\MGENVXD.VXD"
   Rename "$INSTDIR\ID1" "$INSTDIR\id1"
   Rename "$INSTDIR\id1\PAK0.PAK" "$INSTDIR\id1\pak0.pak"
+  # Keep pak0.pak and remove qsw106.zip in distfile folder if DISTFILES_DELETE is 0
+  ${If} $DISTFILES_DELETE == 0
+    CopyFiles "$INSTDIR\id1\pak0.pak" "$DISTFILES_PATH\pak0.pak"
+    Delete "$DISTFILES_PATH\qsw106.zip"
+  ${EndIf}
   SkipShareware:
   # Add to installed size
   ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "qsw106.zip"
@@ -323,9 +349,18 @@ Section "nQuake" NQUAKE
   IntOp $0 $0 / $INSTSIZE
   RealProgress::SetProgress /NOUNLOAD $0
 
+  # Download and install textures
+  !insertmacro InstallSection textures.zip "nQuake textures"
+  # Add to installed size
+  ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "textures.zip"
+  IntOp $INSTALLED $INSTALLED + $0
+  # Set progress bar
+  IntOp $0 $INSTALLED * 100
+  IntOp $0 $0 / $INSTSIZE
+  RealProgress::SetProgress /NOUNLOAD $0
+
   # Download and install Team Fortress if selected
-  !insertmacro MUI_INSTALLOPTIONS_READ $R0 "addons.ini" "Field 3" "State"
-  ${If} $R0 == 1
+  ${If} $ADDON_FORTRESS == 1
     !insertmacro InstallSection addon-fortress.zip "Team Fortress"
     # Add to installed size
     ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "addon-fortress.zip"
@@ -337,8 +372,7 @@ Section "nQuake" NQUAKE
   ${EndIf}
 
   # Download and install Clan Arena if selected
-  !insertmacro MUI_INSTALLOPTIONS_READ $R0 "addons.ini" "Field 4" "State"
-  ${If} $R0 == 1
+  ${If} $ADDON_CLANARENA == 1
     !insertmacro InstallSection addon-clanarena.zip "Clan Arena"
     # Add to installed size
     ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "addon-clanarena.zip"
@@ -350,8 +384,7 @@ Section "nQuake" NQUAKE
   ${EndIf}
 
   # Download and install high resolution textures if selected
-  !insertmacro MUI_INSTALLOPTIONS_READ $R0 "addons.ini" "Field 6" "State"
-  ${If} $R0 == 1
+  ${If} $ADDON_TEXTURES == 1
     !insertmacro InstallSection addon-textures.zip "High resolution textures"
     # Add to installed size
     ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "addon-textures.zip"
@@ -364,13 +397,21 @@ Section "nQuake" NQUAKE
 
   # Copy pak1.pak if it can be found alongside the installer executable
   ${If} ${FileExists} "$EXEDIR\pak1.pak"
-    ${GetSize} $EXEDIR "/M=pak1.pak /S=0B /G=0" $7 $8 $9
-    ${If} $7 == "34257856"
-      CopyFiles "$EXEDIR\pak1.pak" "$INSTDIR\id1\pak1.pak"
-      # Remove gpl maps also
-      Delete "$INSTDIR\id1\gpl_maps.pk3"
-      Delete "$INSTDIR\id1\readme.txt"
+    StrCpy $R0 "$EXEDIR"
+  ${ElseIf} ${FileExists} "$DISTFILES_PATH\pak1.pak"
+    StrCpy $R0 "$DISTFILES_PATH"
+  ${EndIf}
+  ${GetSize} "$R0" "/M=pak1.pak /S=0B /G=0" $7 $8 $9
+  ${If} $7 == "34257856"
+    CopyFiles "$R0\pak1.pak" "$INSTDIR\id1\pak1.pak"
+    ${If} $DISTFILES_DELETE == 0
+    ${AndIf} $R0 != $DISTFILES_PATH
+      CopyFiles "$R0\pak1.pak" "$DISTFILES_PATH\pak1.pak"
     ${EndIf}
+    FileWrite $INSTLOG "id1\pak1.pak$\r$\n"
+    # Remove gpl maps also
+    Delete "$INSTDIR\id1\gpl_maps.pk3"
+    Delete "$INSTDIR\id1\readme.txt"
   ${EndIf}
 
 SectionEnd
@@ -404,11 +445,6 @@ SectionEnd
 
 Section "" # Clean up installation
 
-  # Close open temporary files
-  FileClose $INSTLOG
-  FileClose $ERRLOG
-  FileClose $DISTLOG
-
   # Write config.cfgs for each mod
   CreateDirectory "$INSTDIR\ezquake\configs"
   FileOpen $CONFIGCFG "$INSTDIR\ezquake\configs\preset.cfg" w
@@ -429,16 +465,24 @@ Section "" # Clean up installation
     FileWrite $CONFIGCFG "bind $CONFIG_MOVERIGHT $\"+moveright$\"$\r$\n"
     FileWrite $CONFIGCFG "bind $CONFIG_JUMP $\"+jump$\"$\r$\n"
   FileClose $CONFIGCFG
+  FileWrite $INSTLOG "ezquake\configs\preset.cfg$\r$\n"
+
+  # Close open temporary files
+  FileClose $INSTLOG
+  FileClose $ERRLOG
+  FileClose $DISTLOG
 
   # Write install.log
   FileOpen $INSTLOG "$INSTDIR\install.log" w
     ${time::GetFileTime} "$INSTDIR\install.log" $0 $1 $2
     FileWrite $INSTLOG "Install date: $1$\r$\n"
     FileOpen $R0 $INSTLOGTMP r
-      ClearErrors
       ${DoUntil} ${Errors}
         FileRead $R0 $0
-        FileWrite $INSTLOG $0
+        StrCpy $0 $0 -2
+        ${If} ${FileExists} "$INSTDIR\$0"
+          FileWrite $INSTLOG "$0$\r$\n"
+        ${EndIf}
       ${LoopUntil} ${Errors}
     FileClose $R0
   FileClose $INSTLOG
@@ -454,7 +498,8 @@ Section "" # Clean up installation
         ${EndIf}
       ${LoopUntil} ${Errors}
     FileClose $DISTLOG
-    RMDir /REBOOTOK $DISTFILES_PATH
+    # Remove directory if empty
+    !insertmacro RemoveFolderIfEmpty $DISTFILES_PATH
   # Copy nquake.ini to the distfiles directory if "update distfiles" and "keep distfiles" was set
   ${ElseIf} $DISTFILES_UPDATE == 1
     FlushINI $NQUAKE_INI
@@ -467,7 +512,7 @@ Section "" # Clean up installation
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\nQuake" "DisplayVersion" "${VERSION}"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\nQuake" "DisplayIcon" "$INSTDIR\uninstall.exe"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\nQuake" "UninstallString" "$INSTDIR\uninstall.exe"
-  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\nQuake" "Publisher" "The nQuake Team"
+  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\nQuake" "Publisher" "Empezar (mpezar@gmail.com)"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\nQuake" "URLUpdateInfo" "http://sourceforge.net/project/showfiles.php?group_id=197706"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\nQuake" "URLInfoAbout" "http://nquake.com/"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\nQuake" "HelpLink" "http://sourceforge.net/forum/forum.php?forum_id=702198"
@@ -475,10 +520,15 @@ Section "" # Clean up installation
   WriteRegDWORD HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\nQuake" "NoRepair" "1"
 
   # Create file associations
-  ${registerExtension} "$INSTDIR\ezquake-gl.exe" ".qtv" "QTV Link"
-  ${registerExtension} "$INSTDIR\ezquake-gl.exe" ".qwz" "Qizmo Demo File"
-  ${registerExtension} "$INSTDIR\ezquake-gl.exe" ".qwd" "Quakeworld Demo File"
-  ${registerExtension} "$INSTDIR\ezquake-gl.exe" ".mvd" "Multi-View Demo File"
+  ${If} $ASSOCIATE_FILES == 1
+    WriteRegStr HKCU "Software\nQuake" "File_Associations" "1"
+    ${registerExtension} "$INSTDIR\ezquake-gl.exe" .qtv "QTV Stream Info File"
+    ${registerExtension} "$INSTDIR\ezquake-gl.exe" .qwz "Qizmo Demo File"
+    ${registerExtension} "$INSTDIR\ezquake-gl.exe" .qwd "Quakeworld Demo File"
+    ${registerExtension} "$INSTDIR\ezquake-gl.exe" .mvd "Multi-View Demo File"
+  ${Else}
+    WriteRegStr HKCU "Software\nQuake" "File_Associations" "0"
+  ${EndIf}
 
   # Create uninstaller
   WriteUninstaller "uninstall.exe"
@@ -540,7 +590,8 @@ Section "Uninstall"
     Delete /REBOOTOK "$INSTDIR\uninstall.exe"
     ${locate::RMDirEmpty} $INSTDIR /M=*.* $0
     DetailPrint "Removed $0 empty directories"
-    RMDir /REBOOTOK $INSTDIR
+    # Remove directory if empty
+    !insertmacro RemoveFolderIfEmpty $INSTDIR
   ${Else}
     # Ask the user if he is sure about removing all the files contained within the nQuake directory
     MessageBox MB_YESNO|MB_ICONEXCLAMATION "This will remove all files contained within the nQuake directory.$\r$\n$\r$\nAre you sure?" IDNO AbortUninst
@@ -554,38 +605,17 @@ Section "Uninstall"
     # Remove start menu items
     ReadRegStr $R0 HKCU "Software\nQuake" "StartMenu_Folder"
     RMDir /r /REBOOTOK "$SMPROGRAMS\$R0"
+    # Remove file associations
+    ReadRegStr $R1 HKCU "Software\nQuake" "File_Associations"
     ${If} $R1 == 1
-    ${AndIf} $R2 == $INSTDIR
-      ReadRegStr $R0 HKCR ".qtv" ""
-      StrCmp $R0 "ezQuake.qtv" 0 +2
-      DeleteRegKey HKCR ".qtv"
-
-      ReadRegStr $R0 HKCR ".mvd" ""
-      StrCmp $R0 "ezQuake.demo" 0 +2
-      DeleteRegKey HKCR ".mvd"
-
-      ReadRegStr $R0 HKCR ".qwd" ""
-      StrCmp $R0 "ezQuake.demo" 0 +2
-      DeleteRegKey HKCR ".qwd"
-
-      ReadRegStr $R0 HKCR ".qwz" ""
-      StrCmp $R0 "ezQuake.demo" 0 +2
-      DeleteRegKey HKCR ".qwz"
-
-      ReadRegStr $R0 HKCR ".lst" ""
-      StrCmp $R0 "txtfile" 0 +2
-      DeleteRegKey HKCR ".lst"
-
-      DeleteRegKey HKCR "ezQuake.qtv"
-      DeleteRegKey HKCR "ezQuake.demo"
+      ${unregisterExtension} ".qtv" "QTV Stream Info File"
+      ${unregisterExtension} ".qwz" "Qizmo Demo File"
+      ${unregisterExtension} ".qwd" "Quakeworld Demo File"
+      ${unregisterExtension} ".mvd" "Multi-View Demo File"
     ${EndIf}
     DeleteRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\nQuake"
     DeleteRegKey HKCU "Software\nQuake"
   ${EndIf}
-
-  # Remove file association
-  ${unregisterExtension} ".qtv" "QTV File"
-
 
   Goto FinishUninst
   AbortUninst:
@@ -663,6 +693,14 @@ Function ADDONS
   IntOp $1 $SIZE / 1000
   !insertmacro MUI_INSTALLOPTIONS_WRITE "addons.ini" "Field 6" "Text" "High resolution textures ($1 MB)"
   !insertmacro MUI_INSTALLOPTIONS_DISPLAY "addons.ini"
+
+FunctionEnd
+
+Function ASSOCIATION
+
+  !insertmacro MUI_INSTALLOPTIONS_EXTRACT "association.ini"
+  !insertmacro MUI_HEADER_TEXT "File Association" "Select whether you want to associate QuakeWorld files or not."
+  !insertmacro MUI_INSTALLOPTIONS_DISPLAY "association.ini"
 
 FunctionEnd
 
@@ -748,14 +786,23 @@ FunctionEnd
 !define SetSize "Call SetSize"
 
 Function SetSize
+  !insertmacro MUI_INSTALLOPTIONS_READ $ADDON_FORTRESS "addons.ini" "Field 3" "State"
+  !insertmacro MUI_INSTALLOPTIONS_READ $ADDON_CLANARENA "addons.ini" "Field 4" "State"
+  !insertmacro MUI_INSTALLOPTIONS_READ $ADDON_TEXTURES "addons.ini" "Field 6" "State"
+  !insertmacro MUI_INSTALLOPTIONS_READ $DISTFILES_PATH "download.ini" "Field 3" "State"
   # Only add shareware if pak0.pak doesn't exist
   IntOp $1 0 + 0
-  ${If} ${FileExists} "$EXEDIR\pak0.pak"
-    ${GetSize} $EXEDIR "/M=pak0.pak /S=0B /G=0" $7 $8 $9
+  ${Unless} ${FileExists} "$INSTDIR\ID1\pak0.pak"
+    ${If} ${FileExists} "$EXEDIR\pak0.pak"
+      StrCpy $R0 "$EXEDIR"
+    ${ElseIf} ${FileExists} "$DISTFILES_PATH\pak0.pak"
+      StrCpy $R0 "$DISTFILES_PATH"
+    ${EndIf}
+    ${GetSize} $R0 "/M=pak0.pak /S=0B /G=0" $7 $8 $9
     ${If} $7 == "18278619"
       Goto SkipShareware
     ${EndIf}
-  ${EndIf}
+  ${EndUnless}
   !insertmacro DetermineSectionSize qsw106.zip
   IntOp $1 $1 + $SIZE
   SkipShareware:
@@ -763,18 +810,17 @@ Function SetSize
   IntOp $1 $1 + $SIZE
   !insertmacro DetermineSectionSize non-gpl.zip
   IntOp $1 $1 + $SIZE
-  !insertmacro MUI_INSTALLOPTIONS_READ $R0 "addons.ini" "Field 3" "State"
-  ${If} $R0 == 1
+  !insertmacro DetermineSectionSize textures.zip
+  IntOp $1 $1 + $SIZE
+  ${If} $ADDON_FORTRESS == 1
     !insertmacro DetermineSectionSize addon-fortress.zip
     IntOp $1 $1 + $SIZE
   ${EndIf}
-  !insertmacro MUI_INSTALLOPTIONS_READ $R0 "addons.ini" "Field 4" "State"
-  ${If} $R0 == 1
+  ${If} $ADDON_CLANARENA == 1
     !insertmacro DetermineSectionSize addon-clanarena.zip
     IntOp $1 $1 + $SIZE
   ${EndIf}
-  !insertmacro MUI_INSTALLOPTIONS_READ $R0 "addons.ini" "Field 6" "State"
-  ${If} $R0 == 1
+  ${If} $ADDON_TEXTURES == 1
     !insertmacro DetermineSectionSize addon-textures.zip
     IntOp $1 $1 + $SIZE
   ${EndIf}
@@ -895,7 +941,8 @@ Function .abortInstallation
   Delete /REBOOTOK "$INSTDIR\install.log"
   ${locate::RMDirEmpty} $INSTDIR /M=*.* $0
   DetailPrint "Removed $0 empty directories"
-  RMDir /REBOOTOK $INSTDIR
+  # Remove directory if empty
+  !insertmacro RemoveFolderIfEmpty $INSTDIR
   Goto InstEnd
   SkipInstRemoval:
   Delete /REBOOTOK "$INSTDIR\install.log"
@@ -923,7 +970,8 @@ Function .abortInstallation
       IntOp $5 $5 + 1
     ${LoopUntil} ${Errors}
   FileClose $R0
-  RMDir /REBOOTOK $DISTFILES_PATH
+  # Remove directory if empty
+  !insertmacro RemoveFolderIfEmpty $DISTFILES_PATH
   DistEnd:
 
   # Set progress bar to 100%
@@ -985,7 +1033,10 @@ Function .installSection
   Pop $R1 # distfile info
   Pop $R0 # distfile filename
   Call .checkDistfileDate
-  ${If} ${FileExists} "$DISTFILES_PATH\$R0"
+  ${If} ${FileExists} "$EXEDIR\$R0"
+    DetailPrint "Extracting $R1, please wait..."
+    nsisunz::UnzipToStack "$EXEDIR\$R0" $INSTDIR
+  ${ElseIf} ${FileExists} "$DISTFILES_PATH\$R0"
   ${OrIf} $OFFLINE == 1
     ${If} $DISTFILES_UPDATE == 0
     ${OrIf} $R2 == 0

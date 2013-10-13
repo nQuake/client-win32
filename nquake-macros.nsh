@@ -12,7 +12,7 @@
   ${EndIf}
 !macroend
 
-# Installs a section of fQuake
+# Installs a section of nQuake
 !macro InstallSection PACKAGE DESCRIPTION
   Push ${PACKAGE}
   Push "${DESCRIPTION}"
@@ -27,8 +27,16 @@
   FileClose $0
 !macroend
 
-# Determines the size of an fQuake section
+# Determines the size of an nQuake section
 !macro DetermineSectionSize PACKAGE
   ReadINIStr $0 $NQUAKE_INI "distfile_sizes" ${PACKAGE}
   StrCpy $SIZE $0
+!macroend
+
+# Remove directory if empty
+!macro RemoveFolderIfEmpty FOLDER
+  ${locate::GetSize} $INSTDIR "/M=*.* /G=1" $0 $1 $2
+  ${If} $1 == 0
+    RMDir /r /REBOOTOK "${FOLDER}"
+  ${EndIf}
 !macroend

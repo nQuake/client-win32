@@ -1,3 +1,14 @@
+2013-10-12 - nQuake v2.6 for Windows
+
+* Added a file association page to setup.
+* Setup now also looks for setup files in the installer folder.
+* Setup now copies pak0.pak and pak1.pak to setup file folder for later use if user selects to keep setup files.
+* Broke out the base textures from the non-gpl distribution file and made it into its own, reducing download time when downloading high resolution textures.
+* Removed support for nQuake versions < 2.0.
+* Fixed the bug where the installation folder would sometimes not get removed.
+* Fixed the bug where the setup files folder would get removed even if it wasn't empty. (This could cause pretty much damage if the files were downloaded to e.g. D:\.)
+* Minor bug fixes and code improvement.
+
 2013-10-10 - nQuake v2.5 for Windows
 
 * Added an addon page during the installation with Team Fortress, Clan Arena and high-resolution textures.
