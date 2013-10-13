@@ -1,22 +1,20 @@
 ;nQuake NSIS Online Installer Script
-;By Empezar 2007-05-31; Last modified 2012-08-20
+;By Empezar 2007-05-31; Last modified 2012-12-29
 
-!define VERSION "2.1"
-!define SHORTVERSION "21"
+!define VERSION "2.2"
+!define SHORTVERSION "22"
 
 Name "nQuake"
 OutFile "nquake${SHORTVERSION}_installer.exe"
 InstallDir "C:\nQuake"
 
-RequestExecutionLevel admin # Request admin permissions
-
-!define INSTALLER_URL "http://nquake.sourceforge.net" # Note: no trailing slash!
+!define INSTALLER_URL "http://nquake.com" # Note: no trailing slash!
 !define DISTFILES_PATH "C:\nquake-distfiles" # Note: no trailing slash!
 
 # Editing anything below this line is not recommended
 ;---------------------------------------------------
 
-InstallDirRegKey HKLM "Software\nQuake" "Install_Dir"
+InstallDirRegKey HKCU "Software\nQuake" "Install_Dir"
 
 ;----------------------------------------------------
 ;Header Files
@@ -31,15 +29,13 @@ InstallDirRegKey HKLM "Software\nQuake" "Install_Dir"
 !include "VersionCompare.nsh"
 !include "VersionConvert.nsh"
 !include "WinMessages.nsh"
-!include "StrContains.nsh"
+!include "MultiUser.nsh"
 !include "nquake-macros.nsh"
 
 ;----------------------------------------------------
 ;Variables
 
-Var CONFIGCFG
 Var DISTFILES_DELETE
-Var ASSOCIATE_FILES
 Var DISTFILES_PATH
 Var DISTFILES_UPDATE
 Var DISTFILES_URL
@@ -72,6 +68,8 @@ Var STARTMENU_FOLDER
 !define MUI_HEADERIMAGE
 !define MUI_HEADERIMAGE_BITMAP "nquake-header.bmp"
 
+!define MULTIUSER_EXECUTIONLEVEL Highest
+
 ;----------------------------------------------------
 ;Installer Pages
 
@@ -85,8 +83,6 @@ LicenseForceSelection checkbox "I agree to these terms and conditions"
 Page custom DISTFILEFOLDER
 
 Page custom MIRRORSELECT
-
-Page custom ASSOCIATION
 
 DirText "Setup will install nQuake in the following folder. To install in a different folder, click Browse and select another folder. Click Next to continue.$\r$\n$\r$\nIt is NOT ADVISABLE to install in the Program Files folder." "Destination Folder" "Browse" "Select the folder to install nQuake in:"
 !insertmacro MUI_PAGE_DIRECTORY
@@ -103,6 +99,7 @@ Page custom ERRORS
 !define MUI_FINISHPAGE_LINK_LOCATION "http://www.quakeworld.nu/"
 !define MUI_FINISHPAGE_SHOWREADME "$INSTDIR/readme.txt"
 !define MUI_FINISHPAGE_SHOWREADME_TEXT "Open readme"
+!define MUI_FINISHPAGE_SHOWREADME_NOTCHECKED
 !define MUI_FINISHPAGE_NOREBOOTSUPPORT
 !insertmacro MUI_PAGE_FINISH
 
@@ -150,7 +147,6 @@ Section "" # Prepare installation
   !insertmacro MUI_INSTALLOPTIONS_READ $DISTFILES_PATH "distfilefolder.ini" "Field 3" "State"
   !insertmacro MUI_INSTALLOPTIONS_READ $DISTFILES_UPDATE "distfilefolder.ini" "Field 4" "State"
   !insertmacro MUI_INSTALLOPTIONS_READ $DISTFILES_DELETE "distfilefolder.ini" "Field 5" "State"
-  !insertmacro MUI_INSTALLOPTIONS_READ $ASSOCIATE_FILES "association.ini" "Field 2" "State"
 
   # Create distfiles folder if it doesn't already exist
   ${Unless} ${FileExists} "$DISTFILES_PATH\*.*"
@@ -288,8 +284,6 @@ SectionEnd
 
 Section "" # StartMenu
 
-  SetShellVarContext all
-
   # Copy the first char of the startmenu folder selected during installation
   StrCpy $0 $STARTMENU_FOLDER 1
 
@@ -310,7 +304,7 @@ Section "" # StartMenu
     CreateShortCut "$SMPROGRAMS\$STARTMENU_FOLDER\Uninstall nQuake.lnk" "$INSTDIR\uninstall.exe" "" "$INSTDIR\uninstall.exe" 0
 
     # Write startmenu folder to registry
-    WriteRegStr HKLM "Software\nQuake" "StartMenu_Folder" $STARTMENU_FOLDER
+    WriteRegStr HKCU "Software\nQuake" "StartMenu_Folder" $STARTMENU_FOLDER
   ${EndUnless}
 
 SectionEnd
@@ -335,18 +329,6 @@ Section "" # Clean up installation
     FileClose $R0
   FileClose $INSTLOG
 
-  # Check if installed to "program files" and add cfg_use_home 1 if it is
-  ${StrContains} $0 "Program Files" $INSTDIR
-  ${If} $0 != ""
-    FileOpen $CONFIGCFG "$INSTDIR\ezquake\configs\config.cfg" a
-      FileSeek $CONFIGCFG 0 END
-      FileWrite $CONFIGCFG "$\r$\n// Added by nQuake installer$\r$\n"
-      FileWrite $CONFIGCFG "cfg_use_gamedir 0$\r$\n"
-      FileWrite $CONFIGCFG "cfg_use_home 1$\r$\n"
-      FileWrite $CONFIGCFG "cl_mediaroot 1$\r$\n"
-    FileClose $CONFIGCFG
-  ${EndIf}
-
   # Remove downloaded distfiles
   ${If} $DISTFILES_DELETE == 1
     FileOpen $DISTLOG $DISTLOGTMP r
@@ -366,41 +348,17 @@ Section "" # Clean up installation
   ${EndIf}
 
   # Write to registry
-  WriteRegStr HKLM "Software\nQuake" "Install_Dir" "$INSTDIR"
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\nQuake" "DisplayName" "nQuake"
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\nQuake" "DisplayVersion" "${VERSION}"
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\nQuake" "DisplayIcon" "$INSTDIR\uninstall.exe"
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\nQuake" "UninstallString" "$INSTDIR\uninstall.exe"
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\nQuake" "Publisher" "The nQuake Team"
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\nQuake" "URLUpdateInfo" "http://sourceforge.net/project/showfiles.php?group_id=197706"
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\nQuake" "URLInfoAbout" "http://nquake.com/"
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\nQuake" "HelpLink" "http://sourceforge.net/forum/forum.php?forum_id=702198"
-  WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\nQuake" "NoModify" "1"
-  WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\nQuake" "NoRepair" "1"
-
-  # Associate files
-  ${If} $ASSOCIATE_FILES == 1
-    WriteRegStr HKLM "Software\nQuake" "File_Associations" "1"
-    WriteRegStr HKLM "Software\nQuake" "File_Associations_Dir" "$INSTDIR"
-    WriteRegStr HKCR ".qtv" "" "ezQuake.qtv"
-    WriteRegStr HKCR ".mvd" "" "ezQuake.demo"
-    WriteRegStr HKCR ".qwd" "" "ezQuake.demo"
-    WriteRegStr HKCR ".qwz" "" "ezQuake.demo"
-    WriteRegStr HKCR ".lst" "" "txtfile"
-    WriteRegStr HKCR "ezQuake.qtv" "" "QTV Stream Info File"
-    WriteRegStr HKCR "ezQuake.qtv\DefaultIcon" "" "$INSTDIR\ezquake-gl.exe,0"
-    WriteRegStr HKCR "ezQuake.qtv\shell" "" "open"
-    WriteRegStr HKCR "ezQuake.qtv\shell\open\command" "" '$INSTDIR\ezquake-gl.exe "%1"'
-    WriteRegStr HKCR "ezQuake.demo" "" "QuakeWorld Demo"
-    WriteRegStr HKCR "ezQuake.demo\DefaultIcon" "" "$INSTDIR\ezquake-gl.exe,0"
-    WriteRegStr HKCR "ezQuake.demo\shell" "" "open"
-    WriteRegStr HKCR "ezQuake.demo\shell\open\command" "" '$INSTDIR\ezquake-gl.exe "%1"'
-  ${Else}
-    ReadRegStr $R0 HKLM "Software\nQuake" "File_Associations"
-    ${Unless} $R0 == 1
-      WriteRegStr HKLM "Software\nQuake" "File_Associations" "0"
-    ${EndUnless}
-  ${EndIf}
+  WriteRegStr HKCU "Software\nQuake" "Install_Dir" "$INSTDIR"
+  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\nQuake" "DisplayName" "nQuake"
+  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\nQuake" "DisplayVersion" "${VERSION}"
+  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\nQuake" "DisplayIcon" "$INSTDIR\uninstall.exe"
+  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\nQuake" "UninstallString" "$INSTDIR\uninstall.exe"
+  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\nQuake" "Publisher" "The nQuake Team"
+  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\nQuake" "URLUpdateInfo" "http://sourceforge.net/project/showfiles.php?group_id=197706"
+  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\nQuake" "URLInfoAbout" "http://nquake.com/"
+  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\nQuake" "HelpLink" "http://sourceforge.net/forum/forum.php?forum_id=702198"
+  WriteRegDWORD HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\nQuake" "NoModify" "1"
+  WriteRegDWORD HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\nQuake" "NoRepair" "1"
 
   # Create uninstaller
   WriteUninstaller "uninstall.exe"
@@ -411,8 +369,6 @@ SectionEnd
 ;Uninstaller Section
 
 Section "Uninstall"
-
-  SetShellVarContext all
 
   # Set out path to temporary files
   SetOutPath $TEMP
@@ -473,14 +429,14 @@ Section "Uninstall"
   ${EndIf}
 
   # Remove start menu items and registry entries if they belong to this nQuake
-  ReadRegStr $R0 HKLM "Software\nQuake" "Install_Dir"
+  ReadRegStr $R0 HKCU "Software\nQuake" "Install_Dir"
   ${If} $R0 == $INSTDIR
     # Remove start menu items
-    ReadRegStr $R0 HKLM "Software\nQuake" "StartMenu_Folder"
+    ReadRegStr $R0 HKCU "Software\nQuake" "StartMenu_Folder"
     RMDir /r /REBOOTOK "$SMPROGRAMS\$R0"
     # Remove file associations
-    ReadRegStr $R1 HKLM "Software\nQuake" "File_Associations"
-    ReadRegStr $R2 HKLM "Software\nQuake" "File_Associations_Dir"
+    ReadRegStr $R1 HKCU "Software\nQuake" "File_Associations"
+    ReadRegStr $R2 HKCU "Software\nQuake" "File_Associations_Dir"
     ${If} $R1 == 1
     ${AndIf} $R2 == $INSTDIR
       ReadRegStr $R0 HKCR ".qtv" ""
@@ -506,8 +462,8 @@ Section "Uninstall"
       DeleteRegKey HKCR "ezQuake.qtv"
       DeleteRegKey HKCR "ezQuake.demo"
     ${EndIf}
-    DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\nQuake"
-    DeleteRegKey HKLM "Software\nQuake"
+    DeleteRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\nQuake"
+    DeleteRegKey HKCU "Software\nQuake"
   ${EndIf}
 
   Goto FinishUninst
@@ -566,14 +522,6 @@ Function MIRRORSELECT
     !insertmacro MUI_INSTALLOPTIONS_WRITE "mirrorselect.ini" "Field 3" "ListItems" $2
     !insertmacro MUI_INSTALLOPTIONS_DISPLAY "mirrorselect.ini"
   ${EndUnless}
-
-FunctionEnd
-
-Function ASSOCIATION
-
-  !insertmacro MUI_INSTALLOPTIONS_EXTRACT "association.ini"
-  !insertmacro MUI_HEADER_TEXT "File Association" "Select whether you want to associate QuakeWorld files or not."
-  !insertmacro MUI_INSTALLOPTIONS_DISPLAY "association.ini"
 
 FunctionEnd
 
@@ -658,6 +606,7 @@ FunctionEnd
 
 Function .onInit
 
+  !insertmacro MULTIUSER_INIT
   GetTempFileName $NQUAKE_INI
 
   # Download nquake.ini
@@ -707,6 +656,12 @@ Function .onInit
   SectionSetSize ${NQUAKE} $1
 
   InitEnd:
+
+FunctionEnd
+
+Function un.onInit
+
+  !insertmacro MULTIUSER_UNINIT
 
 FunctionEnd
 

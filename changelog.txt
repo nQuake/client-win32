@@ -1,3 +1,21 @@
+2012-12-29 - nQuake v2.2 for Windows
+
+* New installer welcome screen!
+* Setup will now remove distfile folders after downloading them by default.
+* Setup will no longer open readme file by default.
+* Fixed the bug where start menu items weren't removed on uninstall.
+* Removed the file association screen.
+* Removed the fix where setup added cfg_use_home 1 to config.cfg if installed in Program Files.
+
+2012-08-26 - nQuakesv v1.1 for Linux
+
+* Now supports up to 10 ports.
+* Improved code.
+
+2012-08-22 - nQuake v2.1 for Linux
+
+* Setup now automatically detects architecture.
+
 2012-08-20 - nQuake v2.1 for Windows
 
 * Setup now checks if nQuake is installed in Program Files, if it is, cfg_use_home 1 is added to config.
