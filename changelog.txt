@@ -1,3 +1,15 @@
+2013-10-10 - nQuake v2.5 for Windows
+
+* Added an addon page during the installation with Team Fortress, Clan Arena and high-resolution textures.
+* Added file associations for .qtv, .qwz, .qwd and .mvd.
+* Merged the download location with the mirror select page.
+* Fixed the bug where the installer could not detect newer versions of the installer.
+* Fixed the bug where the download size wasn't displayed properly.
+
+2013-09-14 - nQuake v2.41 for Windows
+
+* Made the configuration window show your user name as the default player name.
+
 2013-08-04 - nQuake v2.4 for Windows
 
 * Improved the configuration window.

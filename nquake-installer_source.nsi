@@ -1,15 +1,15 @@
 ;nQuake NSIS Online Installer Script
-;By Empezar 2007-05-31; Last modified 2013-09-14
+;By Empezar 2007-05-31; Last modified 2013-10-10
 
-!define VERSION "2.41"
-!define SHORTVERSION "241"
+!define VERSION "2.5"
+!define SHORTVERSION "25"
 
 Name "nQuake"
 OutFile "nquake${SHORTVERSION}_installer.exe"
 InstallDir "C:\nQuake"
 
 !define INSTALLER_URL "http://nquake.com" # Note: no trailing slash!
-!define DISTFILES_PATH "C:\nquake-distfiles" # Note: no trailing slash!
+!define DISTFILES_PATH "$LOCALAPPDATA\nQuake\" # Note: no trailing slash!
 
 # Editing anything below this line is not recommended
 ;---------------------------------------------------
@@ -20,6 +20,7 @@ InstallDirRegKey HKCU "Software\nQuake" "Install_Dir"
 ;Header Files
 
 !include "MUI.nsh"
+!include "FileAssociation.nsh"
 !include "FileFunc.nsh"
 !insertmacro GetSize
 !insertmacro GetTime
@@ -88,13 +89,14 @@ Var STARTMENU_FOLDER
 LicenseForceSelection checkbox "I agree to these terms and conditions"
 !insertmacro MUI_PAGE_LICENSE "license.txt"
 
-Page custom DISTFILEFOLDER
-
-Page custom MIRRORSELECT
+Page custom DOWNLOAD
 
 Page custom CONFIG
 
+Page custom ADDONS
+
 DirText "Setup will install nQuake in the following folder. To install in a different folder, click Browse and select another folder. Click Next to continue.$\r$\n$\r$\nIt is NOT ADVISABLE to install in the Program Files folder." "Destination Folder" "Browse" "Select the folder to install nQuake in:"
+!define MUI_PAGE_CUSTOMFUNCTION_SHOW DirectoryPageShow
 !insertmacro MUI_PAGE_DIRECTORY
 
 !insertmacro MUI_PAGE_STARTMENU "Application" $STARTMENU_FOLDER
@@ -136,9 +138,7 @@ LangString ^SpaceRequired ${LANG_ENGLISH} "Download size: "
 ;Reserve Files
 
 ReserveFile "config.ini"
-ReserveFile "distfilefolder.ini"
-ReserveFile "mirrorselect.ini"
-ReserveFile "association.ini"
+ReserveFile "download.ini"
 ReserveFile "errors.ini"
 ReserveFile "uninstall.ini"
 
@@ -155,9 +155,9 @@ Section "" # Prepare installation
   RealProgress::SetProgress /NOUNLOAD 0
 
   # Read information from custom pages
-  !insertmacro MUI_INSTALLOPTIONS_READ $DISTFILES_PATH "distfilefolder.ini" "Field 3" "State"
-  !insertmacro MUI_INSTALLOPTIONS_READ $DISTFILES_UPDATE "distfilefolder.ini" "Field 4" "State"
-  !insertmacro MUI_INSTALLOPTIONS_READ $DISTFILES_DELETE "distfilefolder.ini" "Field 5" "State"
+  !insertmacro MUI_INSTALLOPTIONS_READ $DISTFILES_PATH "download.ini" "Field 3" "State"
+  !insertmacro MUI_INSTALLOPTIONS_READ $DISTFILES_UPDATE "download.ini" "Field 4" "State"
+  !insertmacro MUI_INSTALLOPTIONS_READ $DISTFILES_DELETE "download.ini" "Field 5" "State"
   !insertmacro MUI_INSTALLOPTIONS_READ $CONFIG_NAME "config.ini" "Field 4" "State"
   !insertmacro MUI_INSTALLOPTIONS_READ $CONFIG_INVERT "config.ini" "Field 6" "State"
   !insertmacro MUI_INSTALLOPTIONS_READ $CONFIG_FORWARD "config.ini" "Field 9" "State"
@@ -181,9 +181,24 @@ Section "" # Prepare installation
   IntOp $INSTSIZE $INSTSIZE + $0
   ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "non-gpl.zip"
   IntOp $INSTSIZE $INSTSIZE + $0
+  !insertmacro MUI_INSTALLOPTIONS_READ $R0 "addons.ini" "Field 3" "State"
+  ${If} $R0 == 1
+    ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "addon-fortress.zip"
+    IntOp $INSTSIZE $INSTSIZE + $0
+  ${EndIf}
+  !insertmacro MUI_INSTALLOPTIONS_READ $R0 "addons.ini" "Field 4" "State"
+  ${If} $R0 == 1
+    ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "addon-clanarena.zip"
+    IntOp $INSTSIZE $INSTSIZE + $0
+  ${EndIf}
+  !insertmacro MUI_INSTALLOPTIONS_READ $R0 "addons.ini" "Field 6" "State"
+  ${If} $R0 == 1
+    ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "addon-textures.zip"
+    IntOp $INSTSIZE $INSTSIZE + $0
+  ${EndIf}
 
   # Find out what mirror was selected
-  !insertmacro MUI_INSTALLOPTIONS_READ $R0 "mirrorselect.ini" "Field 3" "State"
+  !insertmacro MUI_INSTALLOPTIONS_READ $R0 "download.ini" "Field 7" "State"
   ${If} $R0 == "Randomly selected mirror (Recommended)"
     # Get amount of mirrors ($0 = amount of mirrors)
     StrCpy $0 1
@@ -308,6 +323,44 @@ Section "nQuake" NQUAKE
   IntOp $0 $0 / $INSTSIZE
   RealProgress::SetProgress /NOUNLOAD $0
 
+  # Download and install Team Fortress if selected
+  !insertmacro MUI_INSTALLOPTIONS_READ $R0 "addons.ini" "Field 3" "State"
+  ${If} $R0 == 1
+    !insertmacro InstallSection addon-fortress.zip "Team Fortress"
+    # Add to installed size
+    ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "addon-fortress.zip"
+    IntOp $INSTALLED $INSTALLED + $0
+    # Set progress bar
+    IntOp $0 $INSTALLED * 100
+    IntOp $0 $0 / $INSTSIZE
+    RealProgress::SetProgress /NOUNLOAD $0
+  ${EndIf}
+
+  # Download and install Clan Arena if selected
+  !insertmacro MUI_INSTALLOPTIONS_READ $R0 "addons.ini" "Field 4" "State"
+  ${If} $R0 == 1
+    !insertmacro InstallSection addon-clanarena.zip "Clan Arena"
+    # Add to installed size
+    ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "addon-clanarena.zip"
+    IntOp $INSTALLED $INSTALLED + $0
+    # Set progress bar
+    IntOp $0 $INSTALLED * 100
+    IntOp $0 $0 / $INSTSIZE
+    RealProgress::SetProgress /NOUNLOAD $0
+  ${EndIf}
+
+  # Download and install high resolution textures if selected
+  !insertmacro MUI_INSTALLOPTIONS_READ $R0 "addons.ini" "Field 6" "State"
+  ${If} $R0 == 1
+    !insertmacro InstallSection addon-textures.zip "High resolution textures"
+    # Add to installed size
+    ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "addon-textures.zip"
+    IntOp $INSTALLED $INSTALLED + $0
+    # Set progress bar
+    IntOp $0 $INSTALLED * 100
+    IntOp $0 $0 / $INSTSIZE
+    RealProgress::SetProgress /NOUNLOAD $0
+  ${EndIf}
 
   # Copy pak1.pak if it can be found alongside the installer executable
   ${If} ${FileExists} "$EXEDIR\pak1.pak"
@@ -421,6 +474,12 @@ Section "" # Clean up installation
   WriteRegDWORD HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\nQuake" "NoModify" "1"
   WriteRegDWORD HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\nQuake" "NoRepair" "1"
 
+  # Create file associations
+  ${registerExtension} "$INSTDIR\ezquake-gl.exe" ".qtv" "QTV Link"
+  ${registerExtension} "$INSTDIR\ezquake-gl.exe" ".qwz" "Qizmo Demo File"
+  ${registerExtension} "$INSTDIR\ezquake-gl.exe" ".qwd" "Quakeworld Demo File"
+  ${registerExtension} "$INSTDIR\ezquake-gl.exe" ".mvd" "Multi-View Demo File"
+
   # Create uninstaller
   WriteUninstaller "uninstall.exe"
 
@@ -495,9 +554,6 @@ Section "Uninstall"
     # Remove start menu items
     ReadRegStr $R0 HKCU "Software\nQuake" "StartMenu_Folder"
     RMDir /r /REBOOTOK "$SMPROGRAMS\$R0"
-    # Remove file associations
-    ReadRegStr $R1 HKCU "Software\nQuake" "File_Associations"
-    ReadRegStr $R2 HKCU "Software\nQuake" "File_Associations_Dir"
     ${If} $R1 == 1
     ${AndIf} $R2 == $INSTDIR
       ReadRegStr $R0 HKCR ".qtv" ""
@@ -527,6 +583,10 @@ Section "Uninstall"
     DeleteRegKey HKCU "Software\nQuake"
   ${EndIf}
 
+  # Remove file association
+  ${unregisterExtension} ".qtv" "QTV File"
+
+
   Goto FinishUninst
   AbortUninst:
   Abort "Uninstallation aborted."
@@ -537,32 +597,24 @@ SectionEnd
 ;----------------------------------------------------
 ;Custom Pages
 
-Function DISTFILEFOLDER
+Function DOWNLOAD
 
-  !insertmacro MUI_INSTALLOPTIONS_EXTRACT "distfilefolder.ini"
+  !insertmacro MUI_INSTALLOPTIONS_EXTRACT "download.ini"
   # Change the text on the distfile folder page if the installer is in offline mode
   ${If} $OFFLINE == 1
-    !insertmacro MUI_HEADER_TEXT "Distribution Files" "Select where the distribution files are located."
-    !insertmacro MUI_INSTALLOPTIONS_WRITE "distfilefolder.ini" "Field 1" "Text" "Setup will use the distribution files (used to install nQuake) located in the following folder. To use a different folder, click Browse and select another folder. Click Next to continue."
-    !insertmacro MUI_INSTALLOPTIONS_WRITE "distfilefolder.ini" "Field 4" "Type" ""
-    !insertmacro MUI_INSTALLOPTIONS_WRITE "distfilefolder.ini" "Field 4" "State" "0"
-    !insertmacro MUI_INSTALLOPTIONS_WRITE "distfilefolder.ini" "Field 5" "Type" ""
-    !insertmacro MUI_INSTALLOPTIONS_WRITE "distfilefolder.ini" "Field 5" "State" "0"
+    !insertmacro MUI_HEADER_TEXT "Setup Files" "Select where the setup files are located."
+    !insertmacro MUI_INSTALLOPTIONS_WRITE "download.ini" "Field 1" "Text" "Setup will use the setup files located in the following folder. To use a different folder, click Browse and select another folder. Click Next to continue."
+    !insertmacro MUI_INSTALLOPTIONS_WRITE "download.ini" "Field 4" "Type" ""
+    !insertmacro MUI_INSTALLOPTIONS_WRITE "download.ini" "Field 4" "State" "0"
+    !insertmacro MUI_INSTALLOPTIONS_WRITE "download.ini" "Field 5" "Type" ""
+    !insertmacro MUI_INSTALLOPTIONS_WRITE "download.ini" "Field 5" "State" "0"
   ${Else}
-    !insertmacro MUI_HEADER_TEXT "Distribution Files" "Select where you want the distribution files to be downloaded."
+    !insertmacro MUI_HEADER_TEXT "Setup Files" "Select the download location for the setup files."
   ${EndIf}
-  !insertmacro MUI_INSTALLOPTIONS_WRITE "distfilefolder.ini" "Field 3" "State" ${DISTFILES_PATH}
-  !insertmacro MUI_INSTALLOPTIONS_DISPLAY "distfilefolder.ini"
-
-FunctionEnd
-
-Function MIRRORSELECT
+  !insertmacro MUI_INSTALLOPTIONS_WRITE "download.ini" "Field 3" "State" ${DISTFILES_PATH}
 
   # Only display mirror selection if the installer is in online mode
   ${Unless} $OFFLINE == 1
-    !insertmacro MUI_INSTALLOPTIONS_EXTRACT "mirrorselect.ini"
-    !insertmacro MUI_HEADER_TEXT "Mirror Selection" "Select a mirror from your part of the world."
-
     # Fix the mirrors for the Preferences page
     StrCpy $0 1
     StrCpy $2 "Randomly selected mirror (Recommended)"
@@ -580,9 +632,10 @@ Function MIRRORSELECT
       StrCpy $2 $2 "" 1
     ${EndIf}
 
-    !insertmacro MUI_INSTALLOPTIONS_WRITE "mirrorselect.ini" "Field 3" "ListItems" $2
-    !insertmacro MUI_INSTALLOPTIONS_DISPLAY "mirrorselect.ini"
+    !insertmacro MUI_INSTALLOPTIONS_WRITE "download.ini" "Field 7" "ListItems" $2
   ${EndUnless}
+
+  !insertmacro MUI_INSTALLOPTIONS_DISPLAY "download.ini"
 
 FunctionEnd
 
@@ -593,6 +646,23 @@ Function CONFIG
   System::Call "advapi32::GetUserName(t .r0, *i ${NSIS_MAX_STRLEN} r1) i.r2"
   !insertmacro MUI_INSTALLOPTIONS_WRITE "config.ini" "Field 4" "State" "$0"
   !insertmacro MUI_INSTALLOPTIONS_DISPLAY "config.ini"
+
+FunctionEnd
+
+Function ADDONS
+
+  !insertmacro MUI_INSTALLOPTIONS_EXTRACT "addons.ini"
+  !insertmacro MUI_HEADER_TEXT "Addons" "Choose what modifications and addons to install"
+  !insertmacro DetermineSectionSize addon-fortress.zip
+  IntOp $1 $SIZE / 1000
+  !insertmacro MUI_INSTALLOPTIONS_WRITE "addons.ini" "Field 3" "Text" "Team Fortress ($1 MB)"
+  !insertmacro DetermineSectionSize addon-clanarena.zip
+  IntOp $1 $SIZE / 1000
+  !insertmacro MUI_INSTALLOPTIONS_WRITE "addons.ini" "Field 4" "Text" "Clan Arena ($1 MB)"
+  !insertmacro DetermineSectionSize addon-textures.zip
+  IntOp $1 $SIZE / 1000
+  !insertmacro MUI_INSTALLOPTIONS_WRITE "addons.ini" "Field 6" "Text" "High resolution textures ($1 MB)"
+  !insertmacro MUI_INSTALLOPTIONS_DISPLAY "addons.ini"
 
 FunctionEnd
 
@@ -673,6 +743,49 @@ Function FinishShow
 FunctionEnd
 
 ;----------------------------------------------------
+;Download size manipulation
+
+!define SetSize "Call SetSize"
+
+Function SetSize
+  # Only add shareware if pak0.pak doesn't exist
+  IntOp $1 0 + 0
+  ${If} ${FileExists} "$EXEDIR\pak0.pak"
+    ${GetSize} $EXEDIR "/M=pak0.pak /S=0B /G=0" $7 $8 $9
+    ${If} $7 == "18278619"
+      Goto SkipShareware
+    ${EndIf}
+  ${EndIf}
+  !insertmacro DetermineSectionSize qsw106.zip
+  IntOp $1 $1 + $SIZE
+  SkipShareware:
+  !insertmacro DetermineSectionSize gpl.zip
+  IntOp $1 $1 + $SIZE
+  !insertmacro DetermineSectionSize non-gpl.zip
+  IntOp $1 $1 + $SIZE
+  !insertmacro MUI_INSTALLOPTIONS_READ $R0 "addons.ini" "Field 3" "State"
+  ${If} $R0 == 1
+    !insertmacro DetermineSectionSize addon-fortress.zip
+    IntOp $1 $1 + $SIZE
+  ${EndIf}
+  !insertmacro MUI_INSTALLOPTIONS_READ $R0 "addons.ini" "Field 4" "State"
+  ${If} $R0 == 1
+    !insertmacro DetermineSectionSize addon-clanarena.zip
+    IntOp $1 $1 + $SIZE
+  ${EndIf}
+  !insertmacro MUI_INSTALLOPTIONS_READ $R0 "addons.ini" "Field 6" "State"
+  ${If} $R0 == 1
+    !insertmacro DetermineSectionSize addon-textures.zip
+    IntOp $1 $1 + $SIZE
+  ${EndIf}
+FunctionEnd
+
+Function DirectoryPageShow
+  ${SetSize}
+  SectionSetSize ${NQUAKE} $1
+FunctionEnd 
+
+;----------------------------------------------------
 ;Functions
 
 Function .onInit
@@ -716,15 +829,6 @@ Function .onInit
     Abort
   ${EndIf}
   ContinueInstall:
-
-  # Determine sizes on all the sections
-  !insertmacro DetermineSectionSize qsw106.zip
-  IntOp $1 0 + $SIZE
-  !insertmacro DetermineSectionSize gpl.zip
-  IntOp $1 $1 + $SIZE
-  !insertmacro DetermineSectionSize non-gpl.zip
-  IntOp $1 $1 + $SIZE
-  SectionSetSize ${NQUAKE} $1
 
   InitEnd:
 
