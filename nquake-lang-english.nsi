@@ -1,5 +1,3 @@
-# English v1.0, last modified 2007-06-02
-
 # Buttons and titles
 LangString ^Branding ${LANG_ENGLISH}                                   "nQuake Installer v${VERSION}"
 LangString ^SetupCaption ${LANG_ENGLISH}                               "nQuake Installer"
@@ -26,10 +24,10 @@ LangString KEEP_DISTFILES ${LANG_ENGLISH}                              "Do you w
 LangString ABORT_REMOVE_INSTFILES ${LANG_ENGLISH}                      "Installation aborted.$\r$\n$\r$\nDo you wish to remove the installed files?"
 LangString ABORT_KEEP_DISTFILES ${LANG_ENGLISH}                        "Do you wish to keep the downloaded distribution files?"
 # Uninstallation confirmation (when install.log is missing)
-LangString UNINSTALL_CONFIRMATION ${LANG_ENGLISH}                      "This will remove *all* files in your Quake® directory!$\r$\n$\r$\nAre you sure you want to continue?"
+LangString UNINSTALL_CONFIRMATION ${LANG_ENGLISH}                      "This will remove *all* files in your nQuake directory!$\r$\n$\r$\nAre you sure you want to continue?"
 # Pages
 LangString WELCOMEPAGE_TITLE ${LANG_ENGLISH}                           "nQuake Installation Wizard"
-LangString WELCOMEPAGE_TEXT ${LANG_ENGLISH}                            "This is the installation wizard of nQuake, a QuakeWorld® package made for newcomers, or those who just want to get on with the fragging as soon as possible!\r\n\r\nThis is an online installer and therefore requires a stable internet connection."
+LangString WELCOMEPAGE_TEXT ${LANG_ENGLISH}                            "This is the installation wizard of nQuake, a QuakeWorld package made for newcomers, or those who just want to get on with the fragging as soon as possible!\r\n\r\nThis is an online installer and therefore requires a stable internet connection."
 LangString LICENSEPAGE_CHECKBOX ${LANG_ENGLISH}                        "I agree to these terms and conditions"
 LangString PREFERENCESPAGE_HEADER ${LANG_ENGLISH}                      "Preferences"
 LangString PREFERENCESPAGE_SUBHEADER ${LANG_ENGLISH}                   "Choose mirror and download location."
@@ -42,7 +40,7 @@ LangString PREFERENCESPAGE_REGISTERED_TITLE ${LANG_ENGLISH}            "Quake Fu
 LangString PREFERENCESPAGE_REGISTERED_DATA_FOUND ${LANG_ENGLISH}       "Found pak1.pak in $0, it will be copied to your new nQuake installation."
 LangString PREFERENCESPAGE_FIND_PAK1 ${LANG_ENGLISH}                   "nQuake only contains the Quake shareware content and custom maps (if selected). To access full version content in nQuake, you need the pak1.pak file from your Quake installation. To include this file in your nQuake installation, please use the browse button below to find it."
 LangString PREFERENCESPAGE_LOST_CD ${LANG_ENGLISH}                     "Lost your Quake CD?"
-LangString FINISHPAGE_SHOWREADME_TEXT ${LANG_ENGLISH}                  "Visit the leading QuakeWorld® Community Site"
+LangString FINISHPAGE_SHOWREADME_TEXT ${LANG_ENGLISH}                  "Visit the leading QuakeWorld Community Site"
 LangString FINISHPAGE_SHOWREADME_LINK ${LANG_ENGLISH}                  "http://www.quakeworld.nu"
 # Shortcuts
 LangString SHORT_EZQUAKE ${LANG_ENGLISH}                               "Start ezQuake"

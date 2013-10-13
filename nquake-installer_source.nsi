@@ -1,8 +1,8 @@
 ;nQuake NSIS Online Installer Script
-;By Empezar 2007-05-31; Last modified 2007-07-14
+;By Empezar 2007-05-31; Last modified 2007-07-15
 
-!define VERSION "1.3"
-!define SHORTVERSION "13"
+!define VERSION "1.31"
+!define SHORTVERSION "131"
 
 Name "nQuake"
 OutFile "nquake${SHORTVERSION}_installer.exe"
@@ -892,6 +892,13 @@ Function .cleanupInstallation
     ${LoopUntil} ${Errors}
     FileClose $R0
   FileClose $INSTLOG
+
+  # Copy the downloaded distfiledates.ini to the distfiles directory
+  # IF the installer was set to update old distfiles
+  ${If} $DISTFILES_UPDATE == 1
+    CopyFiles $DISTFILEDATES_INI "$DISTFILES_PATH\${DISTFILEDATES_INI}"
+    FileWrite $DISTLOG "${DISTFILEDATES_INI}$\r$\n"
+  ${EndIf}
 
   FileClose $DISTLOG
 
