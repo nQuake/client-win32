@@ -20,21 +20,10 @@
   ${EndIf}
 !macroend
 
-# Checks if a local distfile is older than a remote one
-!macro CheckDistfileDate PACKAGE
-  Push ${PACKAGE}
-  Call .checkDistfileDate
-!macroend
-
-# Downloads and extracts an fQuake distfile
-!macro InstallDistfile PACKAGE
-  Push ${PACKAGE}
-  Call .installDistfile
-!macroEnd
-
 # Installs a section of fQuake
-!macro InstallSection PACKAGE
+!macro InstallSection PACKAGE DESCRIPTION
   Push ${PACKAGE}
+  Push "${DESCRIPTION}"
   Call .installSection
 !macroend
 

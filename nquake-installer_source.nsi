@@ -1,8 +1,8 @@
 ;nQuake NSIS Online Installer Script
-;By Empezar 2007-05-31; Last modified 2007-07-25
+;By Empezar 2007-05-31; Last modified 2007-07-31
 
-!define VERSION "1.6"
-!define SHORTVERSION "16"
+!define VERSION "1.7"
+!define SHORTVERSION "17"
 
 Name "nQuake"
 OutFile "nquake${SHORTVERSION}_installer.exe"
@@ -32,28 +32,30 @@ InstallDirRegKey HKLM "Software\nQuake" "Install_Dir"
 !include "nquake-macros.nsh"
 
 ;----------------------------------------------------
-;Initialize Variables
+;Variables
 
-Var NQUAKE_INI
-Var DISTFILES_URL
+Var DISTFILES_KEEP
 Var DISTFILES_PATH
 Var DISTFILES_UPDATE
-Var DISTFILES_KEEP
-Var PAK_LOCATION
-Var REMOVE_MODIFIED_FILES
-Var REMOVE_ALL_FILES
-Var STARTMENU_FOLDER
-Var INSTLOGTMP
-Var INSTLOG
-Var DISTLOGTMP
-Var DISTLOG
+Var DISTFILES_URL
 Var DISTFILES
-Var ERRLOGTMP
+Var DISTLOG
+Var DISTLOGTMP
 Var ERRLOG
+Var ERRLOGTMP
 Var ERRORS
-Var SIZE
+Var INSTALLED
+Var INSTLOG
+Var INSTLOGTMP
+Var INSTSIZE
+Var NQUAKE_INI
 Var OFFLINE
+Var PAK_LOCATION
+Var REMOVE_ALL_FILES
+Var REMOVE_MODIFIED_FILES
 Var RETRIES
+Var SIZE
+Var STARTMENU_FOLDER
 
 ;----------------------------------------------------
 ;Interface Settings
@@ -61,14 +63,13 @@ Var RETRIES
 !define MUI_ICON "quake.ico"
 !define MUI_UNICON "quake.ico"
 
-!define MUI_HEADERIMAGE
 !define MUI_WELCOMEFINISHPAGE_BITMAP "nquake-welcomefinish.bmp"
+
+!define MUI_HEADERIMAGE
 !define MUI_HEADERIMAGE_BITMAP "nquake-header.bmp"
 
-!define MUI_FINISHPAGE_NOREBOOTSUPPORT
-
 ;----------------------------------------------------
-;Pages
+;Installer Pages
 
 !define MUI_PAGE_CUSTOMFUNCTION_PRE "WelcomeShow"
 !define MUI_WELCOMEPAGE_TITLE "nQuake Installation Wizard"
@@ -78,14 +79,16 @@ LicenseForceSelection checkbox "I agree to these terms and conditions"
 !insertmacro MUI_PAGE_LICENSE "license.txt"
 
 Page custom FULLVERSION
+
 Page custom DISTFILEFOLDER
+
 Page custom MIRRORSELECT
+
 Page custom KEEPDISTFILES
 
 !insertmacro MUI_PAGE_DIRECTORY
 
 !insertmacro MUI_PAGE_STARTMENU "Application" $STARTMENU_FOLDER
-
 
 ShowInstDetails "nevershow"
 !insertmacro MUI_PAGE_INSTFILES
@@ -98,7 +101,11 @@ Page custom ERRORS
 !define MUI_FINISHPAGE_SHOWREADME "http://www.quakeworld.nu"
 !define MUI_FINISHPAGE_SHOWREADME_NOTCHECKED
 !define MUI_FINISHPAGE_SHOWREADME_TEXT "Visit the leading QuakeWorld community site"
+!define MUI_FINISHPAGE_NOREBOOTSUPPORT
 !insertmacro MUI_PAGE_FINISH
+
+;----------------------------------------------------
+;Uninstaller Pages
 
 UninstPage custom un.UNINSTALL
 
@@ -123,6 +130,9 @@ ReserveFile "fullversion.ini"
 ReserveFile "distfilefolder.ini"
 ReserveFile "mirrorselect.ini"
 ReserveFile "keepdistfiles.ini"
+ReserveFile "errors.ini"
+ReserveFile "uninstall.ini"
+
 !insertmacro MUI_RESERVEFILE_INSTALLOPTIONS
 
 ;----------------------------------------------------
@@ -132,18 +142,91 @@ Section "" # Prepare installation
 
   SetOutPath $INSTDIR
 
+  # Set progress bar
+  RealProgress::SetProgress /NOUNLOAD 0
+
+  # Read information from custom pages
   !insertmacro MUI_INSTALLOPTIONS_READ $DISTFILES_PATH "distfilefolder.ini" "Field 3" "State"
   !insertmacro MUI_INSTALLOPTIONS_READ $DISTFILES_UPDATE "distfilefolder.ini" "Field 4" "State"
   !insertmacro MUI_INSTALLOPTIONS_READ $PAK_LOCATION "fullversion.ini" "Field 3" "State"
   !insertmacro MUI_INSTALLOPTIONS_READ $DISTFILES_KEEP "keepdistfiles.ini" "Field 2" "State"
 
+  # Create distfiles folder if it doesn't already exist
   ${Unless} ${FileExists} "$DISTFILES_PATH\*.*"
     CreateDirectory $DISTFILES_PATH
   ${EndUnless}
 
-  # Find out what mirror was selected
-  Call .determineMirror
+  # Calculate the installation size
+  ${If} ${FileExists} $PAK_LOCATION
+  ${AndUnless} ${FileExists} "$INSTDIR\id1\pak1.pak"
+    ;StrCpy $0 $PAK_LOCATION -8
+    ;StrCpy $1 $PAK_LOCATION "" -8
+    ;${GetSize} $0 "/M=$1 /S=0K /G=0" $0 $1 $2
+    ;IntOp $INSTSIZE $INSTSIZE + $0
+    # pak1.pak is 14722kb zipped
+    IntOp $INSTSIZE $INSTSIZE + 14722
+  ${EndIf}
+  ${Unless} ${FileExists} "$INSTDIR\ID1\PAK0.PAK"
+    ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "qsw106.zip"
+    IntOp $INSTSIZE $INSTSIZE + $0
+  ${EndUnless}
+  ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "nquake.zip"
+  IntOp $INSTSIZE $INSTSIZE + $0
+  ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "ezquake.zip"
+  IntOp $INSTSIZE $INSTSIZE + $0
+  ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "frogbot.zip"
+  IntOp $INSTSIZE $INSTSIZE + $0
+  ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "eyecandy.zip"
+  IntOp $INSTSIZE $INSTSIZE + $0
+  ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "maps.zip"
+  IntOp $INSTSIZE $INSTSIZE + $0
+  ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "demos.zip"
+  IntOp $INSTSIZE $INSTSIZE + $0
 
+  # Find out what mirror was selected
+  !insertmacro MUI_INSTALLOPTIONS_READ $R0 "mirrorselect.ini" "Field 3" "State"
+  ${If} $R0 == "Randomly selected mirror (Recommended)"
+    # Get amount of mirrors ($0 = amount of mirrors)
+    StrCpy $0 1
+    ReadINIStr $1 $NQUAKE_INI "mirror_descriptions" $0
+    ${DoUntil} $1 == ""
+      ReadINIStr $1 $NQUAKE_INI "mirror_descriptions" $0
+      IntOp $0 $0 + 1
+    ${LoopUntil} $1 == ""
+    IntOp $0 $0 - 2
+  
+    # Get time (seconds)
+    ${time::GetLocalTime} $1
+    StrCpy $1 $1 "" -2
+    
+    # Fix seconds (00 -> 1, 01-09 -> 1-9)
+    ${If} $1 == "00"
+      StrCpy $1 1
+    ${Else}
+      StrCpy $2 $1 1 -2
+      ${If} $2 == 0
+        StrCpy $1 $1 1 -1
+      ${EndIf}
+    ${EndIf}
+  
+    # Loop until you get a number that's within the range 0 < x =< $0
+    ${DoUntil} $1 <= $0
+      IntOp $1 $1 - $0
+    ${LoopUntil} $1 <= $0
+    ReadINIStr $DISTFILES_URL $NQUAKE_INI "mirror_addresses" $1
+    ReadINIStr $0 $NQUAKE_INI "mirror_descriptions" $1
+  ${Else}
+    ${For} $0 1 1000
+      ReadINIStr $R1 $NQUAKE_INI "mirror_descriptions" $0
+      ${If} $R0 == $R1
+        ReadINIStr $DISTFILES_URL $NQUAKE_INI "mirror_addresses" $0
+        ReadINIStr $0 $NQUAKE_INI "mirror_descriptions" $0
+        ${ExitFor}
+      ${EndIf}
+    ${Next}
+  ${EndIf}
+
+  # Open temporary files
   GetTempFileName $INSTLOGTMP
   GetTempFileName $DISTLOGTMP
   GetTempFileName $ERRLOGTMP
@@ -157,19 +240,38 @@ Section "nQuake" NQUAKE
 
   # Download and install pak0.pak (shareware data)
   ${Unless} ${FileExists} "$INSTDIR\ID1\PAK0.PAK"
-    !insertmacro InstallSection qsw106.zip
+    !insertmacro InstallSection qsw106.zip "Quake shareware"
     FileClose $INSTLOG
     FileOpen $INSTLOG $INSTLOGTMP w
+    # Add to installed size
+    ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "qsw106.zip"
+    IntOp $INSTALLED $INSTALLED + $0
+    # Set progress bar
+    IntOp $0 $INSTALLED * 100
+    IntOp $0 $0 / $INSTSIZE
+    RealProgress::SetProgress /NOUNLOAD $0
   ${EndUnless}
   Rename "$INSTDIR\ID1" "$INSTDIR\id1"
   Rename "$INSTDIR\id1\PAK0.PAK" "$INSTDIR\id1\pak0.pak"
   FileWrite $INSTLOG "id1\pak0.pak$\r$\n"
 
   # Copy pak1.pak if it was found or specified (registered data), and doesn't already exist
-  ${If} $PAK_LOCATION != ""
+  ${If} ${FileExists} $PAK_LOCATION
   ${AndUnless} ${FileExists} "$INSTDIR\id1\pak1.pak"
+    # Copy pak1.pak
     CopyFiles /SILENT $PAK_LOCATION "$INSTDIR\id1\pak1.pak"
     FileWrite $INSTLOG "id1\pak1.pak$\r$\n"
+    # Add to installed size
+    ;StrCpy $0 $PAK_LOCATION -8
+    ;StrCpy $1 $PAK_LOCATION "" -8
+    ;${GetSize} $0 "/M=$1 /S=0K /G=0" $0 $1 $2
+    ;IntOp $INSTALLED $INSTALLED + $0
+    # pak1.pak is 14722kb zipped
+    IntOp $INSTALLED $INSTALLED + 14722
+    # Set progress bar (post pak1.pak)
+    IntOp $0 $INSTALLED * 100
+    IntOp $0 $0 / $INSTSIZE
+    RealProgress::SetProgress /NOUNLOAD $0
   ${EndIf}
 
   # Remove crap files extracted from shareware zip
@@ -190,7 +292,6 @@ Section "nQuake" NQUAKE
   Delete "$INSTDIR\SLICNSE.TXT"
   Delete "$INSTDIR\TECHINFO.TXT"
   Delete "$INSTDIR\MGENVXD.VXD"
-  #${locate::RMDirEmpty} "$INSTDIR" /M=*.* $0
 
   # Backup old configs if such exist
   ${If} ${FileExists} "$INSTDIR\ezquake\configs\config.cfg"
@@ -203,20 +304,71 @@ Section "nQuake" NQUAKE
     Rename "$INSTDIR\ezquake\configs\config.cfg" "$INSTDIR\ezquake\configs\config-$1.cfg"
   ${EndIf}
 
-  # Download and install nQuake
-  !insertmacro InstallSection nquake.zip
-  !insertmacro InstallSection ezquake.zip
-  !insertmacro InstallSection eyecandy.zip
-  !insertmacro InstallSection frogbot.zip
-  !insertmacro InstallSection maps.zip
-  !insertmacro InstallSection demos.zip
+  # Download and install basic files
+  !insertmacro InstallSection nquake.zip "basic files"
+  # Add to installed size
+  ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "nquake.zip"
+  IntOp $INSTALLED $INSTALLED + $0
+  # Set progress bar
+  IntOp $0 $INSTALLED * 100
+  IntOp $0 $0 / $INSTSIZE
+  RealProgress::SetProgress /NOUNLOAD $0
+
+  # Download and install ezQuake
+  !insertmacro InstallSection ezquake.zip "ezQuake"
+  # Add to installed size
+  ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "ezquake.zip"
+  IntOp $INSTALLED $INSTALLED + $0
+  # Set progress bar
+  IntOp $0 $INSTALLED * 100
+  IntOp $0 $0 / $INSTSIZE
+  RealProgress::SetProgress /NOUNLOAD $0
+
+  # Download and install enhanced graphics data
+  !insertmacro InstallSection eyecandy.zip "enhanced graphics data"
+  # Add to installed size
+  ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "eyecandy.zip"
+  IntOp $INSTALLED $INSTALLED + $0
+  # Set progress bar
+  IntOp $0 $INSTALLED * 100
+  IntOp $0 $0 / $INSTSIZE
+  RealProgress::SetProgress /NOUNLOAD $0
+
+  # Download and install frogbot
+  !insertmacro InstallSection frogbot.zip "frogbot"
+  # Add to installed size
+  ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "frogbot.zip"
+  IntOp $INSTALLED $INSTALLED + $0
+  # Set progress bar
+  IntOp $0 $INSTALLED * 100
+  IntOp $0 $0 / $INSTSIZE
+  RealProgress::SetProgress /NOUNLOAD $0
+
+  # Download and install custom maps
+  !insertmacro InstallSection maps.zip "custom maps"
+  # Add to installed size
+  ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "maps.zip"
+  IntOp $INSTALLED $INSTALLED + $0
+  # Set progress bar
+  IntOp $0 $INSTALLED * 100
+  IntOp $0 $0 / $INSTSIZE
+  RealProgress::SetProgress /NOUNLOAD $0
+
+  # Download and install demos
+  !insertmacro InstallSection demos.zip "demos"
+  # Add to installed size
+  ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "demos.zip"
+  IntOp $INSTALLED $INSTALLED + $0
+  # Set progress bar
+  IntOp $0 $INSTALLED * 100
+  IntOp $0 $0 / $INSTSIZE
+  RealProgress::SetProgress /NOUNLOAD $0
 
 SectionEnd
 
 Section "" # StartMenu
 
-  RealProgress::SetProgress /NOUNLOAD 100
-
+  # Copy the first char of the startmenu folder selected during installation
   StrCpy $0 $STARTMENU_FOLDER 1
 
   ${Unless} $0 == ">"
@@ -230,9 +382,11 @@ Section "" # StartMenu
     WriteINIStr "$SMPROGRAMS\$STARTMENU_FOLDER\Links\Match Demos.url" "InternetShortcut" "URL" "http://www.challenge-tv.com/index.php?mode=demos&game=2"
     WriteINIStr "$SMPROGRAMS\$STARTMENU_FOLDER\Links\Custom Graphics.url" "InternetShortcut" "URL" "http://gfx.qwdrama.com/"
 
+    # Create shortcuts
     CreateShortCut "$SMPROGRAMS\$STARTMENU_FOLDER\Start ezQuake.lnk" "$INSTDIR\ezquake-gl.exe" "" "$INSTDIR\ezquake-gl.exe" 0
     CreateShortCut "$SMPROGRAMS\$STARTMENU_FOLDER\Uninstall nQuake.lnk" "$INSTDIR\uninstall.exe" "" "$INSTDIR\uninstall.exe" 0
 
+    # Write startmenu folder to registry
     WriteRegStr HKLM "Software\nQuake" "StartMenu_Folder" $STARTMENU_FOLDER
   ${EndUnless}
 
@@ -240,29 +394,18 @@ SectionEnd
 
 Section "" # Clean up installation
 
-  FileClose $ERRLOG
-  FileClose $INSTLOG
-
   # Write install.log
   FileOpen $INSTLOG "$INSTDIR\install.log" w
     ${time::GetFileTime} "$INSTDIR\install.log" $0 $1 $2
     FileWrite $INSTLOG "Install date: $1$\r$\n"
     FileOpen $R0 $INSTLOGTMP r
-    ClearErrors
-    ${DoUntil} ${Errors}
-      FileRead $R0 $0
-      FileWrite $INSTLOG $0
-    ${LoopUntil} ${Errors}
+      ClearErrors
+      ${DoUntil} ${Errors}
+        FileRead $R0 $0
+        FileWrite $INSTLOG $0
+      ${LoopUntil} ${Errors}
     FileClose $R0
   FileClose $INSTLOG
-
-  # Copy nquake.ini to the distfiles directory
-  ${If} $DISTFILES_UPDATE == 1
-    CopyFiles $NQUAKE_INI "$DISTFILES_PATH\nquake.ini"
-    FileWrite $DISTLOG "nquake.ini$\r$\n"
-  ${EndIf}
-
-  FileClose $DISTLOG
 
   # Remove downloaded distfiles
   ${If} $DISTFILES_KEEP == 0
@@ -271,21 +414,31 @@ Section "" # Clean up installation
     Call .LineCount
     Pop $R1 # Line count
     FileOpen $R0 $DISTLOGTMP r
-    StrCpy $5 0 # Current line
-    StrCpy $6 0 # Current % Progress
-    ${DoUntil} ${Errors}
-      FileRead $R0 $0
-      StrCpy $0 $0 -2
-      ${If} ${FileExists} "$DISTFILES_PATH\$0"
-        Delete /REBOOTOK "$DISTFILES_PATH\$0"
-      ${EndIf}
-      IntOp $5 $5 + 1
-    ${LoopUntil} ${Errors}
+      StrCpy $5 0 # Current line
+      StrCpy $6 0 # Current % Progress
+      ${DoUntil} ${Errors}
+        FileRead $R0 $0
+        StrCpy $0 $0 -2
+        ${If} ${FileExists} "$DISTFILES_PATH\$0"
+          Delete /REBOOTOK "$DISTFILES_PATH\$0"
+        ${EndIf}
+        IntOp $5 $5 + 1
+      ${LoopUntil} ${Errors}
     FileClose $R0
     ${Unless} ${FileExists} "$DISTFILES_PATH\*.*"
       RMDir /REBOOTOK $DISTFILES_PATH
     ${EndUnless}
+  # Copy nquake.ini to the distfiles directory if "update distfiles" was set
+  ${ElseIf} $DISTFILES_UPDATE == 1
+    FlushINI $NQUAKE_INI
+    Rename $NQUAKE_INI "$DISTFILES_PATH\nquake.ini"
+    FileWrite $DISTLOG "nquake.ini$\r$\n"
   ${EndIf}
+
+  # Close open temporary files
+  FileClose $ERRLOG
+  FileClose $INSTLOG
+  FileClose $DISTLOG
 
   # Write to registry
   WriteRegStr HKLM "Software\nQuake" "Install_Dir" $INSTDIR
@@ -315,6 +468,7 @@ Section "" # Clean up installation
   WriteRegStr HKCR "ezQuake.demo\shell" "" "open"
   WriteRegStr HKCR "ezQuake.demo\shell\open\command" "" '$INSTDIR\ezquake-gl.exe "%1"'
 
+  # Create uninstaller
   WriteUninstaller "uninstall.exe"
 
 SectionEnd
@@ -324,12 +478,14 @@ SectionEnd
 
 Section "Uninstall"
 
+  # Set out path to temporary files
+  SetOutPath $TEMP
+
+  # Read uninstall settings
   !insertmacro MUI_INSTALLOPTIONS_READ $REMOVE_MODIFIED_FILES "uninstall.ini" "Field 5" "State"
   !insertmacro MUI_INSTALLOPTIONS_READ $REMOVE_ALL_FILES "uninstall.ini" "Field 6" "State"
 
-  SetOutPath $TEMP
-
-  # Set uninstallation progress bar to 0%
+  # Set progress bar to 0%
   RealProgress::SetProgress /NOUNLOAD 0
 
   # If install.log exists and user didn't check "remove all files", remove all files listed in install.log
@@ -383,23 +539,23 @@ Section "Uninstall"
   # Remove file associations
   ReadRegStr $R0 HKCR ".qtv" ""
   StrCmp $R0 "ezQuake.qtv" 0 +2
-    DeleteRegKey HKCR ".qtv"
+  DeleteRegKey HKCR ".qtv"
 
   ReadRegStr $R0 HKCR ".mvd" ""
   StrCmp $R0 "ezQuake.demo" 0 +2
-    DeleteRegKey HKCR ".mvd"
+  DeleteRegKey HKCR ".mvd"
 
   ReadRegStr $R0 HKCR ".qwd" ""
   StrCmp $R0 "ezQuake.demo" 0 +2
-    DeleteRegKey HKCR ".qwd"
+  DeleteRegKey HKCR ".qwd"
 
   ReadRegStr $R0 HKCR ".qwz" ""
   StrCmp $R0 "ezQuake.demo" 0 +2
-    DeleteRegKey HKCR ".qwz"
+  DeleteRegKey HKCR ".qwz"
 
   ReadRegStr $R0 HKCR ".lst" ""
   StrCmp $R0 "txtfile" 0 +2
-    DeleteRegKey HKCR ".lst"
+  DeleteRegKey HKCR ".lst"
 
   DeleteRegKey HKCR "ezQuake.qtv"
   DeleteRegKey HKCR "ezQuake.demo"
@@ -417,6 +573,7 @@ Function FULLVERSION
   !insertmacro MUI_INSTALLOPTIONS_EXTRACT "fullversion.ini"
   !insertmacro MUI_HEADER_TEXT "Full Version Quake Data" "Find pak1.pak for inclusion in nQuake."
 
+  # Look for pak1.pak in 28 likely locations
   ${If} ${FileExists} "C:\Quake\id1\pak1.pak"
     StrCpy $0 "C:\Quake\id1"
     !insertmacro ValidatePak $0
@@ -531,10 +688,12 @@ Function FULLVERSION
   ${Else}
     Goto FullVersionEnd
   ${EndIf}
+
   FullVersion:
   !insertmacro MUI_INSTALLOPTIONS_WRITE "fullversion.ini" "Field 1" "Text" "The full version of Quake is not included in this package. However, setup has found what resembles the full version pak1.pak on your harddrive. If this is not the correct file, click Browse to locate the correct pak1.pak. Click Next to continue."
   !insertmacro MUI_INSTALLOPTIONS_WRITE "fullversion.ini" "Field 3" "State" "$0\pak1.pak"
   FullVersionEnd:
+  # Remove the google link if the installer is in offline mode
   ${If} $OFFLINE == 1
     !insertmacro MUI_INSTALLOPTIONS_WRITE "fullversion.ini" "Field 4" "Type" ""
   ${EndIf}
@@ -545,6 +704,7 @@ FunctionEnd
 Function DISTFILEFOLDER
 
   !insertmacro MUI_INSTALLOPTIONS_EXTRACT "distfilefolder.ini"
+  # Change the text on the distfile folder page if the installer is in offline mode
   ${If} $OFFLINE == 1
     !insertmacro MUI_HEADER_TEXT "Distribution Files" "Select where the distribution files are located."
     !insertmacro MUI_INSTALLOPTIONS_WRITE "distfilefolder.ini" "Field 1" "Text" "Setup will use the distribution files (used to install nQuake) located in the following folder. To use a different folder, click Browse and select another folder. Click Next to continue."
@@ -560,6 +720,7 @@ FunctionEnd
 
 Function MIRRORSELECT
 
+  # Only display mirror selection if the installer is in online mode
   ${Unless} $OFFLINE == 1
     !insertmacro MUI_INSTALLOPTIONS_EXTRACT "mirrorselect.ini"
     !insertmacro MUI_HEADER_TEXT "Mirror Selection" "Select a mirror from your part of the world."
@@ -589,6 +750,7 @@ FunctionEnd
 
 Function KEEPDISTFILES
 
+  # Only display keep distfile page if the installer is in online mode
   ${Unless} $OFFLINE == 1
     !insertmacro MUI_INSTALLOPTIONS_EXTRACT "keepdistfiles.ini"
     !insertmacro MUI_HEADER_TEXT "Distribution Files" "Select whether you want to keep the distribution files or not."
@@ -599,19 +761,21 @@ FunctionEnd
 
 Function ERRORS
 
+  # Only display error page if errors occured during installation
   ${If} $ERRORS > 0
     # Read errors from error log
     StrCpy $1 ""
     FileOpen $R0 $ERRLOGTMP r
-    ClearErrors
-    FileRead $R0 $0
-    StrCpy $1 $0
-    ${DoUntil} ${Errors}
+      ClearErrors
       FileRead $R0 $0
-      ${Unless} $0 == ""
-        StrCpy $1 "$1|$0"
-      ${EndUnless}
-    ${LoopUntil} ${Errors}
+      StrCpy $1 $0
+      ${DoUntil} ${Errors}
+        FileRead $R0 $0
+        ${Unless} $0 == ""
+          StrCpy $1 "$1|$0"
+        ${EndUnless}
+      ${LoopUntil} ${Errors}
+    FileClose $R0
 
     !insertmacro MUI_INSTALLOPTIONS_EXTRACT "errors.ini"
     ${If} $ERRORS == 1
@@ -631,6 +795,7 @@ Function un.UNINSTALL
 
   !insertmacro MUI_INSTALLOPTIONS_EXTRACT "uninstall.ini"
 
+  # Remove all options on uninstall page except for "remove all files" if install.log is missing
   ${Unless} ${FileExists} "$INSTDIR\install.log"
     !insertmacro MUI_INSTALLOPTIONS_WRITE "uninstall.ini" "Field 4" "State" "0"
     !insertmacro MUI_INSTALLOPTIONS_WRITE "uninstall.ini" "Field 4" "Flags" "DISABLED"
@@ -646,9 +811,10 @@ Function un.UNINSTALL
 FunctionEnd
 
 ;----------------------------------------------------
-;Functions
+;Welcome/Finish page manipulation
 
 Function WelcomeShow
+  # Remove the part about nQuake being an online installer on welcome page if the installer is in offline mode
   ${Unless} $OFFLINE == 1
     !insertmacro MUI_INSTALLOPTIONS_WRITE "ioSpecial.ini" "Field 3" "Text" "This is the installation wizard of nQuake, a QuakeWorld package made for newcomers, or those who just want to get on with the fragging as soon as possible!\r\n\r\nThis is an online installer and therefore requires a stable internet connection."
   ${Else}
@@ -669,30 +835,37 @@ Function FinishShow
   ${EndIf}
 FunctionEnd
 
+;----------------------------------------------------
+;Functions
+
 Function .onInit
 
   GetTempFileName $NQUAKE_INI
 
+  # Download nquake.ini
   Start:
-  inetc::get /NOUNLOAD /CAPTION "Initializing..." /BANNER "nQuake is initializing, please wait..." /TIMEOUT=7000 "${INSTALLER_URL}/nquake.ini" $NQUAKE_INI /END
-
-  # Prompt the user if nquake.ini could not be downloaded
-  ReadINIStr $0 $NQUAKE_INI "mirror_addresses" "1"
-  ${If} $0 == ""
-    ${Unless} $RETRIES > 0
-      MessageBox MB_YESNO|MB_ICONEXCLAMATION "Are you trying to install nQuake offline?" IDNO Online
-      StrCpy $OFFLINE 1
-      Goto InitEnd
-    ${EndUnless}
-    Online:
-    ${Unless} $RETRIES == 2
-      MessageBox MB_RETRYCANCEL|MB_ICONEXCLAMATION "Could not download nquake.ini." IDCANCEL Cancel
-      IntOp $RETRIES $RETRIES + 1
-      Goto Start
-    ${EndUnless}
-    MessageBox MB_OK|MB_ICONEXCLAMATION "Could not download nquake.ini. Please try again later."
-    Cancel:
-    Abort
+  inetc::get /NOUNLOAD /CAPTION "Initializing..." /BANNER "nQuake is initializing, please wait..." /TIMEOUT 5000 "${INSTALLER_URL}/nquake.ini" $NQUAKE_INI /END
+  Pop $0
+  ${Unless} $0 == "OK"
+    ${If} $0 == "Cancelled"
+      MessageBox MB_OK|MB_ICONEXCLAMATION "Installation aborted."
+      Abort
+    ${Else}
+      ${Unless} $RETRIES > 0
+        MessageBox MB_YESNO|MB_ICONEXCLAMATION "Are you trying to install nQuake offline?" IDNO Online
+        StrCpy $OFFLINE 1
+        Goto InitEnd
+      ${EndUnless}
+      Online:
+      ${Unless} $RETRIES == 2
+        MessageBox MB_RETRYCANCEL|MB_ICONEXCLAMATION "Could not download nquake.ini." IDCANCEL Cancel
+        IntOp $RETRIES $RETRIES + 1
+        Goto Start
+      ${EndUnless}
+      MessageBox MB_OK|MB_ICONEXCLAMATION "Could not download nquake.ini. Please try again later."
+      Cancel:
+      Abort
+    ${EndIf}
   ${EndUnless}
 
   # Prompt the user if there are newer installer versions available
@@ -735,53 +908,55 @@ FunctionEnd
 
 Function .abortInstallation
 
+  # Close open temporary files
   FileClose $ERRLOG
   FileClose $INSTLOG
+  FileClose $DISTLOG
 
   # Write install.log
   FileOpen $INSTLOG "$INSTDIR\install.log" w
     ${time::GetFileTime} "$INSTDIR\install.log" $0 $1 $2
     FileWrite $INSTLOG "Install date: $1$\r$\n"
     FileOpen $R0 $INSTLOGTMP r
-    ClearErrors
-    ${DoUntil} ${Errors}
-      FileRead $R0 $0
-      FileWrite $INSTLOG $0
-    ${LoopUntil} ${Errors}
+      ClearErrors
+      ${DoUntil} ${Errors}
+        FileRead $R0 $0
+        FileWrite $INSTLOG $0
+      ${LoopUntil} ${Errors}
     FileClose $R0
   FileClose $INSTLOG
 
-  FileClose $DISTLOG
-
   # Ask to remove installed files
   Messagebox MB_YESNO|MB_ICONEXCLAMATION "Installation aborted.$\r$\n$\r$\nDo you wish to remove the installed files?" IDNO SkipInstRemoval
+  # Show details window
+  SetDetailsView show
   # Get line count for install.log
   Push "$INSTDIR\install.log"
   Call .LineCount
   Pop $R1 # Line count
   IntOp $R1 $R1 - 1 # Remove the timestamp from the line count
   FileOpen $R0 "$INSTDIR\install.log" r
-  # Get installation time from install.log
-  FileRead $R0 $0
-  StrCpy $1 $0 -2 14
-  StrCpy $5 1 # Current line
-  StrCpy $6 0 # Current % Progress
-  ${DoUntil} ${Errors}
+    # Get installation time from install.log
     FileRead $R0 $0
-    StrCpy $0 $0 -2
-    ${If} ${FileExists} "$INSTDIR\$0"
-      ${time::GetFileTime} "$INSTDIR\$0" $2 $3 $4
-      ${time::MathTime} "second($1) - second($3) =" $2
-      ${If} $2 >= 0
-        Delete /REBOOTOK "$INSTDIR\$0"
+    StrCpy $1 $0 -2 14
+    StrCpy $5 1 # Current line
+    StrCpy $6 0 # Current % Progress
+    ${DoUntil} ${Errors}
+      FileRead $R0 $0
+      StrCpy $0 $0 -2
+      ${If} ${FileExists} "$INSTDIR\$0"
+        ${time::GetFileTime} "$INSTDIR\$0" $2 $3 $4
+        ${time::MathTime} "second($1) - second($3) =" $2
+        ${If} $2 >= 0
+          Delete /REBOOTOK "$INSTDIR\$0"
+        ${EndIf}
       ${EndIf}
-    ${EndIf}
-    # Set progress bar
-    IntOp $7 $5 * 100
-    IntOp $7 $7 / $R1
-    RealProgress::SetProgress /NOUNLOAD $7
-    IntOp $5 $5 + 1
-  ${LoopUntil} ${Errors}
+      # Set progress bar
+      IntOp $7 $5 * 100
+      IntOp $7 $7 / $R1
+      RealProgress::SetProgress /NOUNLOAD $7
+      IntOp $5 $5 + 1
+    ${LoopUntil} ${Errors}
   FileClose $R0
   Delete /REBOOTOK "$INSTDIR\install.log"
   ${locate::RMDirEmpty} $INSTDIR /M=*.* $0
@@ -799,24 +974,25 @@ Function .abortInstallation
   Call .LineCount
   Pop $R1 # Line count
   FileOpen $R0 $DISTLOGTMP r
-  StrCpy $5 0 # Current line
-  StrCpy $6 0 # Current % Progress
-  ${DoUntil} ${Errors}
-    FileRead $R0 $0
-    StrCpy $0 $0 -2
-    ${If} ${FileExists} "$DISTFILES_PATH\$0"
-      Delete /REBOOTOK "$DISTFILES_PATH\$0"
-    ${EndIf}
-    # Set progress bar
-    IntOp $7 $5 * 100
-    IntOp $7 $7 / $R1
-    RealProgress::SetProgress /NOUNLOAD $7
-    IntOp $5 $5 + 1
-  ${LoopUntil} ${Errors}
+    StrCpy $5 0 # Current line
+    StrCpy $6 0 # Current % Progress
+    ${DoUntil} ${Errors}
+      FileRead $R0 $0
+      StrCpy $0 $0 -2
+      ${If} ${FileExists} "$DISTFILES_PATH\$0"
+        Delete /REBOOTOK "$DISTFILES_PATH\$0"
+      ${EndIf}
+      # Set progress bar
+      IntOp $7 $5 * 100
+      IntOp $7 $7 / $R1
+      RealProgress::SetProgress /NOUNLOAD $7
+      IntOp $5 $5 + 1
+    ${LoopUntil} ${Errors}
   FileClose $R0
   RMDir /REBOOTOK $DISTFILES_PATH
   DistEnd:
 
+  # Set progress bar to 100%
   RealProgress::SetProgress /NOUNLOAD 100
 
   Abort
@@ -824,8 +1000,7 @@ Function .abortInstallation
 FunctionEnd
 
 Function .checkDistfileDate
-  Pop $R0
-  StrCpy $R1 0
+  StrCpy $R2 0
   ReadINIStr $0 $NQUAKE_INI "distfile_dates" $R0
   ${If} ${FileExists} "$DISTFILES_PATH\$R0"
     ${GetTime} "$DISTFILES_PATH\$R0" M $2 $3 $4 $5 $6 $7 $8
@@ -835,12 +1010,12 @@ Function .checkDistfileDate
     ${EndIf}
     StrCpy $1 "$4$3$2$6$7$8"
     ${If} $1 < $0
-      StrCpy $R1 1
+      StrCpy $R2 1
     ${Else}
       ReadINIStr $1 "$DISTFILES_PATH\nquake.ini" "distfile_dates" $R0
       ${Unless} $1 == ""
         ${If} $1 < $0
-          StrCpy $R1 1
+          StrCpy $R2 1
         ${EndIf}
       ${EndUnless}
     ${EndIf}
@@ -848,13 +1023,11 @@ Function .checkDistfileDate
 FunctionEnd
 
 Function .installDistfile
-  Pop $R0
-  Push 0
   Retry:
-  ${Unless} $R1 == 0
-    inetc::get /NOUNLOAD /TRANSLATE "Downloading %s (update)" "Connecting ..." "second" "minute" "hour" "s" "%dkB (%d%%) of %dkB @ %d.%01dkB/s" " (%d %s%s remaining)" "$DISTFILES_URL/$R0" "$DISTFILES_PATH\$R0" /END
+  ${Unless} $R2 == 0 # if $R2 is 1 then distfile needs updating, otherwise not
+    inetc::get /NOUNLOAD /CAPTION "Downloading..." /BANNER "Downloading $R1 update, please wait..." /TIMEOUT 5000 "$DISTFILES_URL/$R0" "$DISTFILES_PATH\$R0" /END
   ${Else}
-    inetc::get /NOUNLOAD "$DISTFILES_URL/$R0" "$DISTFILES_PATH\$R0" /END
+    inetc::get /NOUNLOAD /CAPTION "Downloading..." /BANNER "Downloading $R1, please wait..." /TIMEOUT 5000 "$DISTFILES_URL/$R0" "$DISTFILES_PATH\$R0" /END
   ${EndUnless}
   FileWrite $DISTLOG "$R0$\r$\n"
   Pop $0
@@ -862,37 +1035,34 @@ Function .installDistfile
     ${If} $0 == "Cancelled"
       Call .abortInstallation
     ${Else}
-      DetailPrint 'Error downloading "$R0": $0'
       MessageBox MB_ABORTRETRYIGNORE|MB_ICONEXCLAMATION "Error downloading $R0: $0" IDIGNORE Ignore IDRETRY Retry
       Call .abortInstallation
       Ignore:
       FileWrite $ERRLOG 'Error downloading "$R0": $0|'
       IntOp $ERRORS $ERRORS + 1
     ${EndIf}
-  ${Else}
-    Pop $R9
-    Push 1
   ${EndUnless}
   StrCpy $DISTFILES 1
-  DetailPrint "Extracting from: $R0"
+  DetailPrint "Extracting $R1, please wait..."
   nsisunz::UnzipToStack "$DISTFILES_PATH\$R0" $INSTDIR
 FunctionEnd
 
 Function .installSection
-  Pop $R0
-  !insertmacro CheckDistfileDate $R0
+  Pop $R1 # distfile info
+  Pop $R0 # distfile filename
+  Call .checkDistfileDate
   ${If} ${FileExists} "$DISTFILES_PATH\$R0"
   ${OrIf} $OFFLINE == 1
     ${If} $DISTFILES_UPDATE == 0
-    ${OrIf} $R1 == 0
-      DetailPrint "Extracting from: $R0"
+    ${OrIf} $R2 == 0
+      DetailPrint "Extracting $R1, please wait..."
       nsisunz::UnzipToStack "$DISTFILES_PATH\$R0" $INSTDIR
-    ${ElseIf} $R1 == 1
+    ${ElseIf} $R2 == 1
     ${AndIf} $DISTFILES_UPDATE == 1
-      !insertmacro InstallDistfile $R0
+      Call .installDistfile
     ${EndIf}
   ${ElseUnless} ${FileExists} "$DISTFILES_PATH\$R0"
-    !insertmacro InstallDistfile $R0
+    Call .installDistfile
   ${EndIf}
   Pop $0
   ${If} $0 == "Error opening ZIP file"
@@ -900,64 +1070,16 @@ Function .installSection
   ${OrIf} $0 == "Error writing output file(s)"
   ${OrIf} $0 == "Error extracting from ZIP file"
   ${OrIf} $0 == "File not found in ZIP file"
-    DetailPrint "Extraction error: $0"
     FileWrite $ERRLOG 'Error extracting "$R0": $0|'
     IntOp $ERRORS $ERRORS + 1
   ${Else}
     ${DoUntil} $0 == ""
       ${Unless} $0 == "success"
-        DetailPrint "Extract: $0"
         FileWrite $INSTLOG "$0$\r$\n"
       ${EndUnless}
       Pop $0
     ${LoopUntil} $0 == ""
   ${EndIf}
-FunctionEnd
-
-Function .determineMirror
-  !insertmacro MUI_INSTALLOPTIONS_READ $R0 "mirrorselect.ini" "Field 3" "State"
-  ${If} $R0 == "Randomly selected mirror (Recommended)"
-    # Get amount of mirrors ($0 = amount of mirrors)
-    StrCpy $0 1
-    ReadINIStr $1 $NQUAKE_INI "mirror_descriptions" $0
-    ${DoUntil} $1 == ""
-      ReadINIStr $1 $NQUAKE_INI "mirror_descriptions" $0
-      IntOp $0 $0 + 1
-    ${LoopUntil} $1 == ""
-    IntOp $0 $0 - 2
-  
-    # Get time (seconds)
-    ${time::GetLocalTime} $1
-    StrCpy $1 $1 "" -2
-    
-    # Fix seconds (00 -> 1, 01-09 -> 1-9)
-    ${If} $1 == "00"
-      StrCpy $1 1
-    ${Else}
-      StrCpy $2 $1 1 -2
-      ${If} $2 == 0
-        StrCpy $1 $1 1 -1
-      ${EndIf}
-    ${EndIf}
-  
-    # Loop until you get a number that's within the range 0 < x =< $0
-    ${DoUntil} $1 <= $0
-      IntOp $1 $1 - $0
-    ${LoopUntil} $1 <= $0
-    ReadINIStr $DISTFILES_URL $NQUAKE_INI "mirror_addresses" $1
-    ReadINIStr $0 $NQUAKE_INI "mirror_descriptions" $1
-  ${Else}
-    ${For} $0 1 1000
-      ReadINIStr $R1 $NQUAKE_INI "mirror_descriptions" $0
-      ${If} $R0 == $R1
-        ReadINIStr $DISTFILES_URL $NQUAKE_INI "mirror_addresses" $0
-        ReadINIStr $0 $NQUAKE_INI "mirror_descriptions" $0
-        ${ExitFor}
-      ${EndIf}
-    ${Next}
-  ${EndIf}
-
-  DetailPrint "Using mirror: $0"
 FunctionEnd
 
 Function .LineCount
