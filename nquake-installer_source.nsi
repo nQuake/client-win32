@@ -1,14 +1,14 @@
 ;nQuake NSIS Online Installer Script
-;By Empezar 2007-05-31; Last modified 2007-08-15
+;By Empezar 2007-05-31; Last modified 2007-10-20
 
-!define VERSION "1.7d"
-!define SHORTVERSION "17d"
+!define VERSION "1.8"
+!define SHORTVERSION "18"
 
 Name "nQuake"
 OutFile "nquake${SHORTVERSION}_installer.exe"
 InstallDir "$PROGRAMFILES\nQuake"
 
-!define INSTALLER_URL "http://nquake.sf.net" # Note: no trailing slash!
+!define INSTALLER_URL "http://nquake.sourceforge.net" # Note: no trailing slash!
 !define DISTFILES_PATH "C:\nquake-distfiles" # Note: no trailing slash!
 
 # Editing anything below this line is not recommended
@@ -34,6 +34,7 @@ InstallDirRegKey HKLM "Software\nQuake" "Install_Dir"
 ;----------------------------------------------------
 ;Variables
 
+Var ASSOCIATE_FILES
 Var DISTFILES_KEEP
 Var DISTFILES_PATH
 Var DISTFILES_UPDATE
@@ -86,6 +87,8 @@ Page custom MIRRORSELECT
 
 Page custom KEEPDISTFILES
 
+Page custom ASSOCIATION
+
 !insertmacro MUI_PAGE_DIRECTORY
 
 !insertmacro MUI_PAGE_STARTMENU "Application" $STARTMENU_FOLDER
@@ -130,6 +133,7 @@ ReserveFile "fullversion.ini"
 ReserveFile "distfilefolder.ini"
 ReserveFile "mirrorselect.ini"
 ReserveFile "keepdistfiles.ini"
+ReserveFile "association.ini"
 ReserveFile "errors.ini"
 ReserveFile "uninstall.ini"
 
@@ -150,6 +154,7 @@ Section "" # Prepare installation
   !insertmacro MUI_INSTALLOPTIONS_READ $DISTFILES_UPDATE "distfilefolder.ini" "Field 4" "State"
   !insertmacro MUI_INSTALLOPTIONS_READ $PAK_LOCATION "fullversion.ini" "Field 3" "State"
   !insertmacro MUI_INSTALLOPTIONS_READ $DISTFILES_KEEP "keepdistfiles.ini" "Field 2" "State"
+  !insertmacro MUI_INSTALLOPTIONS_READ $ASSOCIATE_FILES "association.ini" "Field 2" "State"
 
   # Create distfiles folder if it doesn't already exist
   ${Unless} ${FileExists} "$DISTFILES_PATH\*.*"
@@ -173,6 +178,8 @@ Section "" # Prepare installation
   ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "nquake.zip"
   IntOp $INSTSIZE $INSTSIZE + $0
   ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "ezquake.zip"
+  IntOp $INSTSIZE $INSTSIZE + $0
+  ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "ezquake-security.zip"
   IntOp $INSTSIZE $INSTSIZE + $0
   ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "frogbot.zip"
   IntOp $INSTSIZE $INSTSIZE + $0
@@ -322,6 +329,16 @@ Section "nQuake" NQUAKE
   IntOp $0 $0 / $INSTSIZE
   RealProgress::SetProgress /NOUNLOAD $0
 
+  # Download and install ezQuake security module
+  !insertmacro InstallSection ezquake-security.zip "ezQuake security module"
+  # Add to installed size
+  ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "ezquake-security.zip"
+  IntOp $INSTALLED $INSTALLED + $0
+  # Set progress bar
+  IntOp $0 $INSTALLED * 100
+  IntOp $0 $0 / $INSTSIZE
+  RealProgress::SetProgress /NOUNLOAD $0
+
   # Download and install enhanced graphics data
   !insertmacro InstallSection eyecandy.zip "enhanced graphics data"
   # Add to installed size
@@ -392,7 +409,10 @@ SectionEnd
 
 Section "" # Clean up installation
 
+  # Close open temporary files
   FileClose $INSTLOG
+  FileClose $ERRLOG
+  FileClose $DISTLOG
 
   # Write install.log
   FileOpen $INSTLOG "$INSTDIR\install.log" w
@@ -409,39 +429,24 @@ Section "" # Clean up installation
 
   # Remove downloaded distfiles
   ${If} $DISTFILES_KEEP == 0
-    # Get line count for distfiles.log
-    Push $DISTLOGTMP
-    Call .LineCount
-    Pop $R1 # Line count
-    FileOpen $R0 $DISTLOGTMP r
-      StrCpy $5 0 # Current line
-      StrCpy $6 0 # Current % Progress
+    FileOpen $DISTLOG $DISTLOGTMP r
       ${DoUntil} ${Errors}
-        FileRead $R0 $0
+        FileRead $DISTLOG $0
         StrCpy $0 $0 -2
         ${If} ${FileExists} "$DISTFILES_PATH\$0"
           Delete /REBOOTOK "$DISTFILES_PATH\$0"
         ${EndIf}
-        IntOp $5 $5 + 1
       ${LoopUntil} ${Errors}
-    FileClose $R0
-    ${Unless} ${FileExists} "$DISTFILES_PATH\*.*"
-      RMDir /REBOOTOK $DISTFILES_PATH
-    ${EndUnless}
-  # Copy nquake.ini to the distfiles directory if "update distfiles" was set
+    FileClose $DISTLOG
+    RMDir /REBOOTOK $DISTFILES_PATH
+  # Copy nquake.ini to the distfiles directory if "update distfiles" and "keep distfiles" was set
   ${ElseIf} $DISTFILES_UPDATE == 1
     FlushINI $NQUAKE_INI
     CopyFiles $NQUAKE_INI "$DISTFILES_PATH\nquake.ini"
-    FileWrite $DISTLOG "nquake.ini$\r$\n"
   ${EndIf}
 
-  # Close open temporary files
-  FileClose $ERRLOG
-  FileClose $INSTLOG
-  FileClose $DISTLOG
-
   # Write to registry
-  WriteRegStr HKLM "Software\nQuake" "Install_Dir" $INSTDIR
+  WriteRegStr HKLM "Software\nQuake" "Install_Dir" "$INSTDIR"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\nQuake" "DisplayName" "nQuake"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\nQuake" "DisplayVersion" "${VERSION}"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\nQuake" "DisplayIcon" "$INSTDIR\uninstall.exe"
@@ -454,19 +459,28 @@ Section "" # Clean up installation
   WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\nQuake" "NoRepair" "1"
 
   # Associate files
-  WriteRegStr HKCR ".qtv" "" "ezQuake.qtv"
-  WriteRegStr HKCR ".mvd" "" "ezQuake.demo"
-  WriteRegStr HKCR ".qwd" "" "ezQuake.demo"
-  WriteRegStr HKCR ".qwz" "" "ezQuake.demo"
-  WriteRegStr HKCR ".lst" "" "txtfile"
-  WriteRegStr HKCR "ezQuake.qtv" "" "QTV Stream Info File"
-  WriteRegStr HKCR "ezQuake.qtv\DefaultIcon" "" "$INSTDIR\ezquake-gl.exe,0"
-  WriteRegStr HKCR "ezQuake.qtv\shell" "" "open"
-  WriteRegStr HKCR "ezQuake.qtv\shell\open\command" "" '$INSTDIR\ezquake-gl.exe "%1"'
-  WriteRegStr HKCR "ezQuake.demo" "" "QuakeWorld Demo"
-  WriteRegStr HKCR "ezQuake.demo\DefaultIcon" "" "$INSTDIR\ezquake-gl.exe,0"
-  WriteRegStr HKCR "ezQuake.demo\shell" "" "open"
-  WriteRegStr HKCR "ezQuake.demo\shell\open\command" "" '$INSTDIR\ezquake-gl.exe "%1"'
+  ${If} $ASSOCIATE_FILES == 1
+    WriteRegStr HKLM "Software\nQuake" "File_Associations" "1"
+    WriteRegStr HKLM "Software\nQuake" "File_Associations_Dir" "$INSTDIR"
+    WriteRegStr HKCR ".qtv" "" "ezQuake.qtv"
+    WriteRegStr HKCR ".mvd" "" "ezQuake.demo"
+    WriteRegStr HKCR ".qwd" "" "ezQuake.demo"
+    WriteRegStr HKCR ".qwz" "" "ezQuake.demo"
+    WriteRegStr HKCR ".lst" "" "txtfile"
+    WriteRegStr HKCR "ezQuake.qtv" "" "QTV Stream Info File"
+    WriteRegStr HKCR "ezQuake.qtv\DefaultIcon" "" "$INSTDIR\ezquake-gl.exe,0"
+    WriteRegStr HKCR "ezQuake.qtv\shell" "" "open"
+    WriteRegStr HKCR "ezQuake.qtv\shell\open\command" "" '$INSTDIR\ezquake-gl.exe "%1"'
+    WriteRegStr HKCR "ezQuake.demo" "" "QuakeWorld Demo"
+    WriteRegStr HKCR "ezQuake.demo\DefaultIcon" "" "$INSTDIR\ezquake-gl.exe,0"
+    WriteRegStr HKCR "ezQuake.demo\shell" "" "open"
+    WriteRegStr HKCR "ezQuake.demo\shell\open\command" "" '$INSTDIR\ezquake-gl.exe "%1"'
+  ${Else}
+    ReadRegStr $R0 HKLM "Software\nQuake" "File_Associations"
+    ${Unless} $R0 == 1
+      WriteRegStr HKLM "Software\nQuake" "File_Associations" "0"
+    ${EndUnless}
+  ${EndIf}
 
   # Create uninstaller
   WriteUninstaller "uninstall.exe"
@@ -534,35 +548,43 @@ Section "Uninstall"
     RealProgress::SetProgress /NOUNLOAD 100
   ${EndIf}
 
-  ReadRegStr $0 HKLM "Software\nQuake" "StartMenu_Folder"
-  RMDir /r /REBOOTOK "$SMPROGRAMS\$0"
+  # Remove start menu items and registry entries if they belong to this nQuake
+  ReadRegStr $R0 HKLM "Software\nQuake" "Install_Dir"
+  ${If} $R0 == $INSTDIR
+    # Remove start menu items
+    ReadRegStr $R0 HKLM "Software\nQuake" "StartMenu_Folder"
+    RMDir /r /REBOOTOK "$SMPROGRAMS\$R0"
+    # Remove file associations
+    ReadRegStr $R1 HKLM "Software\nQuake" "File_Associations"
+    ReadRegStr $R2 HKLM "Software\nQuake" "File_Associations_Dir"
+    ${If} $R1 == 1
+    ${AndIf} $R2 == $INSTDIR
+      ReadRegStr $R0 HKCR ".qtv" ""
+      StrCmp $R0 "ezQuake.qtv" 0 +2
+      DeleteRegKey HKCR ".qtv"
 
-  # Remove file associations
-  ReadRegStr $R0 HKCR ".qtv" ""
-  StrCmp $R0 "ezQuake.qtv" 0 +2
-  DeleteRegKey HKCR ".qtv"
+      ReadRegStr $R0 HKCR ".mvd" ""
+      StrCmp $R0 "ezQuake.demo" 0 +2
+      DeleteRegKey HKCR ".mvd"
 
-  ReadRegStr $R0 HKCR ".mvd" ""
-  StrCmp $R0 "ezQuake.demo" 0 +2
-  DeleteRegKey HKCR ".mvd"
+      ReadRegStr $R0 HKCR ".qwd" ""
+      StrCmp $R0 "ezQuake.demo" 0 +2
+      DeleteRegKey HKCR ".qwd"
 
-  ReadRegStr $R0 HKCR ".qwd" ""
-  StrCmp $R0 "ezQuake.demo" 0 +2
-  DeleteRegKey HKCR ".qwd"
+      ReadRegStr $R0 HKCR ".qwz" ""
+      StrCmp $R0 "ezQuake.demo" 0 +2
+      DeleteRegKey HKCR ".qwz"
 
-  ReadRegStr $R0 HKCR ".qwz" ""
-  StrCmp $R0 "ezQuake.demo" 0 +2
-  DeleteRegKey HKCR ".qwz"
+      ReadRegStr $R0 HKCR ".lst" ""
+      StrCmp $R0 "txtfile" 0 +2
+      DeleteRegKey HKCR ".lst"
 
-  ReadRegStr $R0 HKCR ".lst" ""
-  StrCmp $R0 "txtfile" 0 +2
-  DeleteRegKey HKCR ".lst"
-
-  DeleteRegKey HKCR "ezQuake.qtv"
-  DeleteRegKey HKCR "ezQuake.demo"
-
-  DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\nQuake"
-  DeleteRegKey HKLM "Software\nQuake"
+      DeleteRegKey HKCR "ezQuake.qtv"
+      DeleteRegKey HKCR "ezQuake.demo"
+    ${EndIf}
+    DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\nQuake"
+    DeleteRegKey HKLM "Software\nQuake"
+  ${EndIf}
 
 SectionEnd
 
@@ -785,6 +807,14 @@ Function KEEPDISTFILES
     !insertmacro MUI_HEADER_TEXT "Distribution Files" "Select whether you want to keep the distribution files or not."
     !insertmacro MUI_INSTALLOPTIONS_DISPLAY "keepdistfiles.ini"
   ${EndUnless}
+
+FunctionEnd
+
+Function ASSOCIATION
+
+  !insertmacro MUI_INSTALLOPTIONS_EXTRACT "association.ini"
+  !insertmacro MUI_HEADER_TEXT "File Association" "Select whether you want to associate QuakeWorld files or not."
+  !insertmacro MUI_INSTALLOPTIONS_DISPLAY "association.ini"
 
 FunctionEnd
 
