@@ -1,3 +1,15 @@
+2007-07-15 - nQuake v1.3
+
+* Added an uninstall option for removing files that were installed by nQuake, even if they were modified.
+* Setup no longer attempts to copy pak1.pak if it already exists in the installation directory.
+* Setup no longer steals focus when copying pak1.pak.
+* Setup now checks the validity of pak1.pak.
+* Setup now complains if you specify a file path that doesn't exist using the Browse button during the Full Version step.
+* Setup now automatically shows the finish page when the installation process is finished.
+* Setup now associates ezQuake with qtv/mvd/qwd/qwz files.
+* Improved initialization process.
+* Improved installer header gfx.
+
 2007-07-14 - nQuake v1.2
 
 * nQuake is now the solid package it claims to be - the user has no choices as to what packages are installed.

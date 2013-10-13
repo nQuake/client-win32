@@ -1,8 +1,8 @@
 ;nQuake NSIS Online Installer Script
 ;By Empezar 2007-05-31; Last modified 2007-07-14
 
-!define VERSION "1.2"
-!define SHORTVERSION "12"
+!define VERSION "1.3"
+!define SHORTVERSION "13"
 
 Name "nQuake"
 OutFile "nquake${SHORTVERSION}_installer.exe"
@@ -36,7 +36,7 @@ InstallDirRegKey HKLM "Software\nQuake" "Install_Dir"
 !include "Time.nsh"
 !include "Locate.nsh"
 !include "VersionCompare.nsh"
-!include "nQuakeMacros.nsh"
+!include "nquake-macros.nsh"
 
 ;----------------------------------------------------
 ;Initialize Variables
@@ -50,6 +50,7 @@ Var DISTFILEDATES_INI
 Var INSTALLERVERSIONS_INI
 Var MIRRORS_INI
 Var PAK_LOCATION
+Var REMOVE_MODIFIED_FILES
 Var REMOVE_ALL_FILES
 Var STARTMENU_FOLDER
 Var INSTLOGTMP
@@ -69,7 +70,6 @@ Var SIZE
 !define MUI_WELCOMEFINISHPAGE_BITMAP "nquake-welcomefinish.bmp"
 !define MUI_HEADERIMAGE_BITMAP "nquake-header.bmp"
 
-!define MUI_FINISHPAGE_NOAUTOCLOSE
 !define MUI_FINISHPAGE_NOREBOOTSUPPORT
 
 ;----------------------------------------------------
@@ -168,9 +168,10 @@ Section "nQuake" NQUAKE
   Rename "$INSTDIR\id1\PAK0.PAK" "$INSTDIR\id1\pak0.pak"
   FileWrite $INSTLOG "id1\pak0.pak$\r$\n"
 
-  # Copy pak1.pak if it was found or specified (registered data)
+  # Copy pak1.pak if it was found or specified (registered data), and doesn't already exist
   ${If} $PAK_LOCATION != ""
-    CopyFiles $PAK_LOCATION "$INSTDIR\id1\pak1.pak"
+  ${AndUnless} ${FileExists} "$INSTDIR\id1\pak1.pak"
+    CopyFiles /SILENT $PAK_LOCATION "$INSTDIR\id1\pak1.pak"
     FileWrite $INSTLOG "id1\pak1.pak$\r$\n"
   ${EndIf}
 
@@ -238,6 +239,34 @@ Section "" # Clean up installation
   WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\nQuake" "NoModify" "1"
   WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\nQuake" "NoRepair" "1"
 
+  # Associate .qtv files
+  WriteRegStr HKCR ".qtv" "" "QuakeWorld.QTV"
+  WriteRegStr HKCR "QuakeWorld.QTV" "" "QTV Stream Info File"
+  WriteRegStr HKCR "QuakeWorld.QTV\DefaultIcon" "" "$INSTDIR\ezquake-gl.exe,0"
+  WriteRegStr HKCR "QuakeWorld.QTV\shell" "" "open"
+  WriteRegStr HKCR "QuakeWorld.QTV\shell\open\command" "" '$INSTDIR\ezquake-gl.exe "%1"'
+
+  # Associate .mvd files
+  WriteRegStr HKCR ".mvd" "" "QuakeWorld.MVD"
+  WriteRegStr HKCR "QuakeWorld.MVD" "" "Multi View Demo File"
+  WriteRegStr HKCR "QuakeWorld.MVD\DefaultIcon" "" "$INSTDIR\ezquake-gl.exe,0"
+  WriteRegStr HKCR "QuakeWorld.MVD\shell" "" "open"
+  WriteRegStr HKCR "QuakeWorld.MVD\shell\open\command" "" '$INSTDIR\ezquake-gl.exe "%1"'
+
+  # Associate .qwd files
+  WriteRegStr HKCR ".qwd" "" "QuakeWorld.QWD"
+  WriteRegStr HKCR "QuakeWorld.QWD" "" "QuakeWorld Demo File"
+  WriteRegStr HKCR "QuakeWorld.QWD\DefaultIcon" "" "$INSTDIR\ezquake-gl.exe,0"
+  WriteRegStr HKCR "QuakeWorld.QWD\shell" "" "open"
+  WriteRegStr HKCR "QuakeWorld.QWD\shell\open\command" "" '$INSTDIR\ezquake-gl.exe "%1"'
+
+  # Associate .qwz files
+  WriteRegStr HKCR ".qwz" "" "QuakeWorld.QWZ"
+  WriteRegStr HKCR "QuakeWorld.QWZ" "" "QuakeWorld Zipdemo File"
+  WriteRegStr HKCR "QuakeWorld.QWZ\DefaultIcon" "" "$INSTDIR\ezquake-gl.exe,0"
+  WriteRegStr HKCR "QuakeWorld.QWZ\shell" "" "open"
+  WriteRegStr HKCR "QuakeWorld.QWZ\shell\open\command" "" '$INSTDIR\ezquake-gl.exe "%1"'
+
   WriteUninstaller "uninstall.exe"
 
 SectionEnd
@@ -247,7 +276,8 @@ SectionEnd
 
 Section "Uninstall"
 
-  !insertmacro MUI_INSTALLOPTIONS_READ $REMOVE_ALL_FILES "removefolder.ini" "Field 2" "State"
+  !insertmacro MUI_INSTALLOPTIONS_READ $REMOVE_MODIFIED_FILES "removefolder.ini" "Field 3" "State"
+  !insertmacro MUI_INSTALLOPTIONS_READ $REMOVE_ALL_FILES "removefolder.ini" "Field 4" "State"
 
   SetOutPath $TEMP
 
@@ -272,11 +302,15 @@ Section "Uninstall"
       FileRead $R0 $0
       StrCpy $0 $0 -2
       ${If} ${FileExists} "$INSTDIR\$0"
+      ${AndUnless} $REMOVE_MODIFIED_FILES == 1
+        # Only remove file if it has not been altered since install
         ${time::GetFileTime} "$INSTDIR\$0" $2 $3 $4
         ${time::MathTime} "second($1) - second($3) =" $2
         ${If} $2 >= 0
           Delete /REBOOTOK "$INSTDIR\$0"
         ${EndIf}
+      ${ElseIf} $REMOVE_MODIFIED_FILES == 1
+        Delete /REBOOTOK "$INSTDIR\$0"
       ${EndIf}
       # Set progress bar
       IntOp $7 $5 * 100
@@ -301,6 +335,28 @@ Section "Uninstall"
   ReadRegStr $0 HKLM "Software\nQuake" "StartMenu_Folder"
   RMDir /r /REBOOTOK "$SMPROGRAMS\$0"
 
+  # Removing file associations
+  ReadRegStr $R0 HKCR ".qtv" ""
+  StrCmp $R0 "QuakeWorld.QTV" 0 +2
+    DeleteRegKey HKCR ".qtv"
+
+  ReadRegStr $R0 HKCR ".mvd" ""
+  StrCmp $R0 "QuakeWorld.MVD" 0 +2
+    DeleteRegKey HKCR ".mvd"
+
+  ReadRegStr $R0 HKCR ".qwd" ""
+  StrCmp $R0 "QuakeWorld.QWD" 0 +2
+    DeleteRegKey HKCR ".qwd"
+
+  ReadRegStr $R0 HKCR ".qwz" ""
+  StrCmp $R0 "QuakeWorld.QWZ" 0 +2
+    DeleteRegKey HKCR ".qwz"
+
+  DeleteRegKey HKCR "QuakeWorld.QTV"
+  DeleteRegKey HKCR "QuakeWorld.MVD"
+  DeleteRegKey HKCR "QuakeWorld.QWD"
+  DeleteRegKey HKCR "QuakeWorld.QWZ"
+
   DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\nQuake"
   DeleteRegKey HKLM "Software\nQuake"
 
@@ -318,9 +374,17 @@ SectionEnd
 
 Function .onInit
 
-  # Download installerversions.ini and prompt the user if there are newer installer versions available
   GetTempFileName $INSTALLERVERSIONS_INI
-  inetc::get /NOUNLOAD /CAPTION "Initializing..." /BANNER "nQuake is initializing, please wait...$\r$\n$\r$\nDownloading version information (1/4)..." /TIMEOUT=7000 "${INSTALLER_URL}/${INSTALLERVERSIONS_INI_REMOTE}" $INSTALLERVERSIONS_INI /END
+  GetTempFileName $MIRRORS_INI
+  GetTempFileName $DISTFILES_INI
+  GetTempFileName $DISTFILEDATES_INI
+
+  inetc::get /NOUNLOAD /CAPTION "Initializing..." /BANNER "nQuake is initializing, please wait..." /TIMEOUT=7000 "${INSTALLER_URL}/${INSTALLERVERSIONS_INI_REMOTE}" $INSTALLERVERSIONS_INI \
+"${INSTALLER_URL}/${MIRRORS_INI_REMOTE}" $MIRRORS_INI \
+"${INSTALLER_URL}/${DISTFILES_INI_REMOTE}" $DISTFILES_INI \
+"${INSTALLER_URL}/${DISTFILEDATES_INI_REMOTE}" $DISTFILEDATES_INI /END
+
+  # Prompt the user if there are newer installer versions available
   ReadINIStr $0 $INSTALLERVERSIONS_INI "versions" "windows"
   ${VersionCompare} ${VERSION} $0 $1
   ${If} $1 == 2
@@ -330,71 +394,42 @@ Function .onInit
   ${EndIf}
   ContinueInstall:
 
-  # Download mirrors.ini
-  ${Unless} ${FileExists} "$EXEDIR\${MIRRORS_INI}"
-    GetTempFileName $MIRRORS_INI
-    inetc::get /NOUNLOAD /CAPTION "Initializing..." /BANNER "nQuake is initializing, please wait...$\r$\n$\r$\nDownloading mirror information (2/4)..." "${INSTALLER_URL}/${MIRRORS_INI_REMOTE}" $MIRRORS_INI /END
-    Pop $0
-    ${Unless} $0 == "OK"
-      MessageBox MB_OK|MB_ICONEXCLAMATION "Setup could not download mirrors.ini, please try again later."
-      Abort
-    ${EndUnless}
-  ${Else}
-    StrCpy $MIRRORS_INI "$EXEDIR\${MIRRORS_INI}"
+  # Prompt the user if mirrors.ini could not be downloaded
+  ReadINIStr $0 $MIRRORS_INI "mirrors" "1"
+  ${If} $0 == ""
+    MessageBox MB_OK|MB_ICONEXCLAMATION "Setup could not download mirrors.ini, please try again later."
+    Abort
   ${EndUnless}
 
   # Download distfiles.ini
-  ${Unless} ${FileExists} "$EXEDIR\${DISTFILES_INI}"
-    GetTempFileName $DISTFILES_INI
-    # Download distfiles.ini from the first mirror if mirrors.ini exists in the installer directory
-    ${If} ${FileExists} "$EXEDIR\${MIRRORS_INI}"
-      ReadINIStr $0 "$EXEDIR\${MIRRORS_INI}" "mirrors" 1
-      inetc::get /NOUNLOAD /CAPTION "Initializing..." /BANNER "nQuake is initializing, please wait...$\r$\n$\r$\nDownloading file size information (2/4)..." "$0/${DISTFILES_INI_REMOTE}" $DISTFILES_INI /END
-      Pop $0
-      ${Unless} $0 == "OK"
-        inetc::get /NOUNLOAD /CAPTION "Initializing..." /BANNER "nQuake is initializing, please wait...$\r$\n$\r$\nDownloading file size information (3/4)..." "${INSTALLER_URL}/${DISTFILES_INI_REMOTE}" $DISTFILES_INI /END
-        Pop $0
-        ${Unless} $0 == "OK"
-          MessageBox MB_OK|MB_ICONEXCLAMATION "Setup could not download distfiles.ini, please try again later."
-        ${EndUnless}
-      ${EndUnless}
-    ${Else}
-      inetc::get /NOUNLOAD /CAPTION "Initializing..." /BANNER "nQuake is initializing, please wait...$\r$\n$\r$\nDownloading file size information (3/4)..." "${INSTALLER_URL}/${DISTFILES_INI_REMOTE}" $DISTFILES_INI /END
-      Pop $0
-      ${Unless} $0 == "OK"
-        MessageBox MB_OK|MB_ICONEXCLAMATION "Setup could not download distfiles.ini, please try again later."
-      ${EndUnless}
-    ${EndIf}
+  ReadINIStr $0 $DISTFILES_INI "size" "qsw106.zip"
+  ${If} $0 == ""
+    MessageBox MB_OK|MB_ICONEXCLAMATION "Setup could not download distfiles.ini.$\r$\n$\r$\nThe download size displayed will be inaccurate."
+    SectionSetSize ${NQUAKE} 86508
   ${Else}
-    StrCpy $DISTFILES_INI "$EXEDIR\${DISTFILES_INI}"
-  ${EndUnless}
-
-  # Download distfiledates.ini
-  GetTempFileName $DISTFILEDATES_INI
-  inetc::get /NOUNLOAD /CAPTION "Initializing..." /BANNER "nQuake is initializing, please wait...$\r$\n$\r$\nDownloading file date information (4/4)..." /TIMEOUT=7000 "${INSTALLER_URL}/${DISTFILEDATES_INI_REMOTE}" $DISTFILEDATES_INI /END
-
-  # Determine sizes on all the sections
-  !insertmacro DetermineSectionSize qsw106.zip
-  StrCpy $R0 $SIZE
-  !insertmacro DetermineSectionSize nquake.zip
-  StrCpy $R1 $SIZE
-  !insertmacro DetermineSectionSize ezquake.zip
-  StrCpy $R2 $SIZE
-  !insertmacro DetermineSectionSize eyecandy.zip
-  StrCpy $R3 $SIZE
-  !insertmacro DetermineSectionSize frogbot.zip
-  StrCpy $R4 $SIZE
-  !insertmacro DetermineSectionSize maps.zip
-  StrCpy $R5 $SIZE
-  !insertmacro DetermineSectionSize demos.zip
-  StrCpy $R6 $SIZE
-  IntOp $0 $R0 + $R1
-  IntOp $0 $0 + $R2
-  IntOp $0 $0 + $R3
-  IntOp $0 $0 + $R4
-  IntOp $0 $0 + $R5
-  IntOp $0 $0 + $R6
-  SectionSetSize ${NQUAKE} $0
+    # Determine sizes on all the sections
+    !insertmacro DetermineSectionSize qsw106.zip
+    StrCpy $R0 $SIZE
+    !insertmacro DetermineSectionSize nquake.zip
+    StrCpy $R1 $SIZE
+    !insertmacro DetermineSectionSize ezquake.zip
+    StrCpy $R2 $SIZE
+    !insertmacro DetermineSectionSize eyecandy.zip
+    StrCpy $R3 $SIZE
+    !insertmacro DetermineSectionSize frogbot.zip
+    StrCpy $R4 $SIZE
+    !insertmacro DetermineSectionSize maps.zip
+    StrCpy $R5 $SIZE
+    !insertmacro DetermineSectionSize demos.zip
+    StrCpy $R6 $SIZE
+    IntOp $0 $R0 + $R1
+    IntOp $0 $0 + $R2
+    IntOp $0 $0 + $R3
+    IntOp $0 $0 + $R4
+    IntOp $0 $0 + $R5
+    IntOp $0 $0 + $R6
+    SectionSetSize ${NQUAKE} $0
+  ${EndIf}
 
 FunctionEnd
 
@@ -405,91 +440,98 @@ Function FULLVERSION
 
   ${If} ${FileExists} "C:\Quake\id1\pak1.pak"
     StrCpy $0 "C:\Quake\id1"
-    Goto FullVersionEnd
-  ${OrIf} ${FileExists} "D:\Quake\id1\pak1.pak"
+    Goto FullVersion
+  ${ElseIf} ${FileExists} "D:\Quake\id1\pak1.pak"
     StrCpy $0 "D:\Quake\id1"
-    Goto FullVersionEnd
-  ${OrIf} ${FileExists} "E:\Quake\id1\pak1.pak"
+    Goto FullVersion
+  ${ElseIf} ${FileExists} "E:\Quake\id1\pak1.pak"
     StrCpy $0 "E:\Quake\id1"
-    Goto FullVersionEnd
-  ${OrIf} ${FileExists} "C:\Games\Quake\id1\pak1.pak"
+    Goto FullVersion
+  ${ElseIf} ${FileExists} "C:\Games\Quake\id1\pak1.pak"
     StrCpy $0 "C:\Games\Quake\id1"
-    Goto FullVersionEnd
-  ${OrIf} ${FileExists} "D:\Games\Quake\id1\pak1.pak"
+    Goto FullVersion
+  ${ElseIf} ${FileExists} "D:\Games\Quake\id1\pak1.pak"
     StrCpy $0 "D:\Games\Quake\id1"
-    Goto FullVersionEnd
-  ${OrIf} ${FileExists} "E:\Games\Quake\id1\pak1.pak"
+    Goto FullVersion
+  ${ElseIf} ${FileExists} "E:\Games\Quake\id1\pak1.pak"
     StrCpy $0 "E:\Games\Quake\id1"
-    Goto FullVersionEnd
-  ${OrIf} ${FileExists} "C:\Program Files\Quake\id1\pak1.pak"
+    Goto FullVersion
+  ${ElseIf} ${FileExists} "C:\Program Files\Quake\id1\pak1.pak"
     StrCpy $0 "C:\Program Files\Quake\id1"
-    Goto FullVersionEnd
-  ${OrIf} ${FileExists} "C:\eQuake\id1\pak1.pak"
+    Goto FullVersion
+  ${ElseIf} ${FileExists} "C:\eQuake\id1\pak1.pak"
     StrCpy $0 "C:\eQuake\id1"
-    Goto FullVersionEnd
-  ${OrIf} ${FileExists} "D:\eQuake\id1\pak1.pak"
+    Goto FullVersion
+  ${ElseIf} ${FileExists} "D:\eQuake\id1\pak1.pak"
     StrCpy $0 "D:\eQuake\id1"
-    Goto FullVersionEnd
-  ${OrIf} ${FileExists} "E:\eQuake\id1\pak1.pak"
+    Goto FullVersion
+  ${ElseIf} ${FileExists} "E:\eQuake\id1\pak1.pak"
     StrCpy $0 "E:\eQuake\id1"
-    Goto FullVersionEnd
-  ${OrIf} ${FileExists} "C:\Games\eQuake\id1\pak1.pak"
+    Goto FullVersion
+  ${ElseIf} ${FileExists} "C:\Games\eQuake\id1\pak1.pak"
     StrCpy $0 "C:\Games\eQuake\id1"
-    Goto FullVersionEnd
-  ${OrIf} ${FileExists} "D:\Games\eQuake\id1\pak1.pak"
+    Goto FullVersion
+  ${ElseIf} ${FileExists} "D:\Games\eQuake\id1\pak1.pak"
     StrCpy $0 "D:\Games\eQuake\id1"
-    Goto FullVersionEnd
-  ${OrIf} ${FileExists} "E:\Games\eQuake\id1\pak1.pak"
+    Goto FullVersion
+  ${ElseIf} ${FileExists} "E:\Games\eQuake\id1\pak1.pak"
     StrCpy $0 "E:\Games\eQuake\id1"
-    Goto FullVersionEnd
-  ${OrIf} ${FileExists} "C:\Program Files\eQuake\id1\pak1.pak"
+    Goto FullVersion
+  ${ElseIf} ${FileExists} "C:\Program Files\eQuake\id1\pak1.pak"
     StrCpy $0 "C:\Program Files\eQuake\id1"
-    Goto FullVersionEnd
-  ${OrIf} ${FileExists} "C:\fQuake\id1\pak1.pak"
+    Goto FullVersion
+  ${ElseIf} ${FileExists} "C:\fQuake\id1\pak1.pak"
     StrCpy $0 "C:\fQuake\id1"
-    Goto FullVersionEnd
-  ${OrIf} ${FileExists} "D:\fQuake\id1\pak1.pak"
+    Goto FullVersion
+  ${ElseIf} ${FileExists} "D:\fQuake\id1\pak1.pak"
     StrCpy $0 "D:\fQuake\id1"
-    Goto FullVersionEnd
-  ${OrIf} ${FileExists} "E:\fQuake\id1\pak1.pak"
+    Goto FullVersion
+  ${ElseIf} ${FileExists} "E:\fQuake\id1\pak1.pak"
     StrCpy $0 "E:\fQuake\id1"
-    Goto FullVersionEnd
-  ${OrIf} ${FileExists} "C:\Games\fQuake\id1\pak1.pak"
+    Goto FullVersion
+  ${ElseIf} ${FileExists} "C:\Games\fQuake\id1\pak1.pak"
     StrCpy $0 "C:\Games\fQuake\id1"
-    Goto FullVersionEnd
-  ${OrIf} ${FileExists} "D:\Games\fQuake\id1\pak1.pak"
+    Goto FullVersion
+  ${ElseIf} ${FileExists} "D:\Games\fQuake\id1\pak1.pak"
     StrCpy $0 "D:\Games\fQuake\id1"
-    Goto FullVersionEnd
-  ${OrIf} ${FileExists} "E:\Games\fQuake\id1\pak1.pak"
+    Goto FullVersion
+  ${ElseIf} ${FileExists} "E:\Games\fQuake\id1\pak1.pak"
     StrCpy $0 "E:\Games\fQuake\id1"
-    Goto FullVersionEnd
-  ${OrIf} ${FileExists} "C:\Program Files\fQuake\id1\pak1.pak"
+    Goto FullVersion
+  ${ElseIf} ${FileExists} "C:\Program Files\fQuake\id1\pak1.pak"
     StrCpy $0 "C:\Program Files\fQuake\id1"
-    Goto FullVersionEnd
-  ${OrIf} ${FileExists} "C:\nQuake\id1\pak1.pak"
+    Goto FullVersion
+  ${ElseIf} ${FileExists} "C:\nQuake\id1\pak1.pak"
     StrCpy $0 "C:\nQuake\id1"
-    Goto FullVersionEnd
-  ${OrIf} ${FileExists} "D:\nQuake\id1\pak1.pak"
+    Goto FullVersion
+  ${ElseIf} ${FileExists} "D:\nQuake\id1\pak1.pak"
     StrCpy $0 "D:\nQuake\id1"
-    Goto FullVersionEnd
-  ${OrIf} ${FileExists} "E:\nQuake\id1\pak1.pak"
+    Goto FullVersion
+  ${ElseIf} ${FileExists} "E:\nQuake\id1\pak1.pak"
     StrCpy $0 "E:\nQuake\id1"
-    Goto FullVersionEnd
-  ${OrIf} ${FileExists} "C:\Games\nQuake\id1\pak1.pak"
+    Goto FullVersion
+  ${ElseIf} ${FileExists} "C:\Games\nQuake\id1\pak1.pak"
     StrCpy $0 "C:\Games\nQuake\id1"
-    Goto FullVersionEnd
-  ${OrIf} ${FileExists} "D:\Games\nQuake\id1\pak1.pak"
+    Goto FullVersion
+  ${ElseIf} ${FileExists} "D:\Games\nQuake\id1\pak1.pak"
     StrCpy $0 "D:\Games\nQuake\id1"
-    Goto FullVersionEnd
-  ${OrIf} ${FileExists} "E:\Games\nQuake\id1\pak1.pak"
+    Goto FullVersion
+  ${ElseIf} ${FileExists} "E:\Games\nQuake\id1\pak1.pak"
     StrCpy $0 "E:\Games\nQuake\id1"
-    Goto FullVersionEnd
-  ${OrIf} ${FileExists} "C:\Program Files\nQuake\id1\pak1.pak"
+    Goto FullVersion
+  ${ElseIf} ${FileExists} "C:\Program Files\nQuake\id1\pak1.pak"
     StrCpy $0 "C:\Program Files\nQuake\id1"
+    Goto FullVersion
+  ${Else}
     Goto FullVersionEnd
   ${EndIf}
+  FullVersion:
+  ${GetSize} $0 "/M=pak1.pak /S=0B /G=0" $7 $8 $9
+  ${If} $7 == 34257856
+    !insertmacro MUI_INSTALLOPTIONS_WRITE "fullversion.ini" "Field 1" "Text" "The full version of Quake is not included in this package. However, setup has found what resembles the full version pak1.pak on your harddrive. If this is not the correct file, click Browse to locate the correct pak1.pak. Click Next to continue."
+    !insertmacro MUI_INSTALLOPTIONS_WRITE "fullversion.ini" "Field 3" "State" "$0\pak1.pak"
+  ${EndIf}
   FullVersionEnd:
-  !insertmacro MUI_INSTALLOPTIONS_WRITE "fullversion.ini" "Field 3" "State" "$0\pak1.pak"
   !insertmacro MUI_INSTALLOPTIONS_DISPLAY "fullversion.ini"
 
 FunctionEnd
