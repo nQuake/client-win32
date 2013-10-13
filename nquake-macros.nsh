@@ -40,11 +40,6 @@
 
 # Determines the size of an fQuake section
 !macro DetermineSectionSize PACKAGE
-  ${If} ${FileExists} "$EXEDIR\${DISTFILES_PATH_RELATIVE}\${PACKAGE}"
-    ${GetSize} "$EXEDIR\${DISTFILES_PATH_RELATIVE}" "/M=${PACKAGE} /S=0K /G=0" $7 $8 $9
-    StrCpy $0 $7
-  ${Else}
-    ReadINIStr $0 $DISTFILES_INI "size" ${PACKAGE}
-  ${EndIf}
+  ReadINIStr $0 $DISTFILES_INI "size" ${PACKAGE}
   StrCpy $SIZE $0
 !macroend
