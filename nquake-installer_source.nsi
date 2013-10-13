@@ -1,8 +1,8 @@
 ;nQuake NSIS Online Installer Script
-;By Empezar 2007-05-31; Last modified 2013-01-05
+;By Empezar 2007-05-31; Last modified 2013-08-04
 
-!define VERSION "2.3"
-!define SHORTVERSION "23"
+!define VERSION "2.4"
+!define SHORTVERSION "24"
 
 Name "nQuake"
 OutFile "nquake${SHORTVERSION}_installer.exe"
@@ -173,6 +173,7 @@ Section "" # Prepare installation
 
   # Calculate the installation size
   ${Unless} ${FileExists} "$INSTDIR\ID1\PAK0.PAK"
+  ${OrUnless} ${FileExists} "$EXEDIR\pak0.pak"
     ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "qsw106.zip"
     IntOp $INSTSIZE $INSTSIZE + $0
   ${EndUnless}
@@ -236,9 +237,17 @@ SectionEnd
 
 Section "nQuake" NQUAKE
 
-  # Download and install pak0.pak (shareware data)
+  # Download and install pak0.pak (shareware data) unless pak0.pak can be found alongside the installer executable
+  ${If} ${FileExists} "$EXEDIR\pak0.pak"
+    ${GetSize} $EXEDIR "/M=pak0.pak /S=0B /G=0" $7 $8 $9
+    ${If} $7 == "18278619"
+      CreateDirectory "$INSTDIR\id1"
+      CopyFiles "$EXEDIR\pak0.pak" "$INSTDIR\id1\pak0.pak"
+      Goto SkipShareware
+    ${EndIf}
+  ${EndIf}
   !insertmacro InstallSection qsw106.zip "Quake shareware"
-  # Remove crap files extracted from shareware zip
+  # Remove crap files extracted from shareware zip and rename uppercase files/folders
   Delete "$INSTDIR\CWSDPMI.EXE"
   Delete "$INSTDIR\QLAUNCH.EXE"
   Delete "$INSTDIR\QUAKE.EXE"
@@ -256,6 +265,9 @@ Section "nQuake" NQUAKE
   Delete "$INSTDIR\SLICNSE.TXT"
   Delete "$INSTDIR\TECHINFO.TXT"
   Delete "$INSTDIR\MGENVXD.VXD"
+  Rename "$INSTDIR\ID1" "$INSTDIR\id1"
+  Rename "$INSTDIR\id1\PAK0.PAK" "$INSTDIR\id1\pak0.pak"
+  SkipShareware:
   # Add to installed size
   ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "qsw106.zip"
   IntOp $INSTALLED $INSTALLED + $0
@@ -263,8 +275,6 @@ Section "nQuake" NQUAKE
   IntOp $0 $INSTALLED * 100
   IntOp $0 $0 / $INSTSIZE
   RealProgress::SetProgress /NOUNLOAD $0
-  Rename "$INSTDIR\ID1" "$INSTDIR\id1"
-  Rename "$INSTDIR\id1\PAK0.PAK" "$INSTDIR\id1\pak0.pak"
   FileWrite $INSTLOG "id1\pak0.pak$\r$\n"
 
   # Backup old configs if such exist
@@ -297,6 +307,18 @@ Section "nQuake" NQUAKE
   IntOp $0 $INSTALLED * 100
   IntOp $0 $0 / $INSTSIZE
   RealProgress::SetProgress /NOUNLOAD $0
+
+
+  # Copy pak1.pak if it can be found alongside the installer executable
+  ${If} ${FileExists} "$EXEDIR\pak1.pak"
+    ${GetSize} $EXEDIR "/M=pak1.pak /S=0B /G=0" $7 $8 $9
+    ${If} $7 == "34257856"
+      CopyFiles "$EXEDIR\pak1.pak" "$INSTDIR\id1\pak1.pak"
+      # Remove gpl maps also
+      Delete "$INSTDIR\id1\gpl_maps.pk3"
+      Delete "$INSTDIR\id1\readme.txt"
+    ${EndIf}
+  ${EndIf}
 
 SectionEnd
 

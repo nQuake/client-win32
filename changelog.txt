@@ -1,3 +1,8 @@
+2013-08-04 - nQuake v2.4 for Windows
+
+* Improved the configuration window.
+* You can now place pak0.pak and pak1.pak alongside the nQuake installer executable, and they will be used in the installation.
+
 2013-01-05 - nQuake v2.3 for Windows
 
 * Added basic configuration window during setup.
