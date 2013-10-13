@@ -1,22 +1,28 @@
-2008-??-?? - nQuake v1.9
+2010-06-06 - nQuake v1.9a for Windows
+
+* Changed Quake steam link and updated cost.
+* Changed URL for "Custom Graphics" start menu shortcut.
+* Changed nQuake project URL.
+
+2008-06-05 - nQuake v1.9 for Windows
 
 * nQuake now copies pak0.pak if found in the same directory as pak1.pak instead of downloading shareware Quake.
 * "Keep/delete distribution files" option moved to distribution file folder selection page.
 * Added a warning message when users choose to remove all files contained within the nQuake folder.
 * Split the eyecandy and nquake packages into smaller packages.
 
-2008-??-?? - nQuake CD-ROM Generator v1.1
+2008-06-05 - nQuake CD-ROM Generator v1.1
 
 * Added a warning message when users choose to remove all files contained within the nQuake folder.
 * Changed the text "Installing file: <filename> (<filesize> kB)" to "Installed file: <filename>".
 * Split the eyecandy and nquake packages into smaller packages.
 
-2008-??-?? - nQuake v1.3 for Mac OS X
+2008-06-05 - nQuake v1.3 for Mac OS X
 
 * Split the eyecandy and nquake packages into smaller packages.
 * Future compatibility.
 
-2008-??-?? - nQuake v1.3 for Linux
+2008-06-05 - nQuake v1.3 for Linux
 
 * Split the eyecandy and nquake packages into smaller packages.
 * Future compatibility.
