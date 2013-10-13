@@ -1,3 +1,11 @@
+# Validates pak1.pak
+!macro ValidatePak PATH
+  ${GetSize} ${PATH} "/M=pak1.pak /S=0B /G=0" $7 $8 $9
+  ${If} $7 == "34257856"
+    Goto FullVersion
+  ${EndIf}
+!macroend
+
 # Backups a file to the backup folder
 !macro BackupOld FILE
   Push 0

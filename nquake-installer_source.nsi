@@ -1,8 +1,8 @@
 ;nQuake NSIS Online Installer Script
-;By Empezar 2007-05-31; Last modified 2007-07-17
+;By Empezar 2007-05-31; Last modified 2007-07-18
 
-!define VERSION "1.5"
-!define SHORTVERSION "15"
+!define VERSION "1.5a"
+!define SHORTVERSION "15a"
 
 Name "nQuake"
 OutFile "nquake${SHORTVERSION}_installer.exe"
@@ -408,97 +408,121 @@ Function FULLVERSION
 
   ${If} ${FileExists} "C:\Quake\id1\pak1.pak"
     StrCpy $0 "C:\Quake\id1"
-    Goto FullVersion
-  ${ElseIf} ${FileExists} "D:\Quake\id1\pak1.pak"
+    !insertmacro ValidatePak $0
+  ${EndIf}
+  ${If} ${FileExists} "D:\Quake\id1\pak1.pak"
     StrCpy $0 "D:\Quake\id1"
-    Goto FullVersion
-  ${ElseIf} ${FileExists} "E:\Quake\id1\pak1.pak"
+    !insertmacro ValidatePak $0
+  ${EndIf}
+  ${If} ${FileExists} "E:\Quake\id1\pak1.pak"
     StrCpy $0 "E:\Quake\id1"
-    Goto FullVersion
-  ${ElseIf} ${FileExists} "C:\Games\Quake\id1\pak1.pak"
+    !insertmacro ValidatePak $0
+  ${EndIf}
+  ${If} ${FileExists} "C:\Games\Quake\id1\pak1.pak"
     StrCpy $0 "C:\Games\Quake\id1"
-    Goto FullVersion
-  ${ElseIf} ${FileExists} "D:\Games\Quake\id1\pak1.pak"
+    !insertmacro ValidatePak $0
+  ${EndIf}
+  ${If} ${FileExists} "D:\Games\Quake\id1\pak1.pak"
     StrCpy $0 "D:\Games\Quake\id1"
-    Goto FullVersion
-  ${ElseIf} ${FileExists} "E:\Games\Quake\id1\pak1.pak"
+    !insertmacro ValidatePak $0
+  ${EndIf}
+  ${If} ${FileExists} "E:\Games\Quake\id1\pak1.pak"
     StrCpy $0 "E:\Games\Quake\id1"
-    Goto FullVersion
-  ${ElseIf} ${FileExists} "C:\Program Files\Quake\id1\pak1.pak"
+    !insertmacro ValidatePak $0
+  ${EndIf}
+  ${If} ${FileExists} "C:\Program Files\Quake\id1\pak1.pak"
     StrCpy $0 "C:\Program Files\Quake\id1"
-    Goto FullVersion
-  ${ElseIf} ${FileExists} "C:\eQuake\id1\pak1.pak"
+    !insertmacro ValidatePak $0
+  ${EndIf}
+  ${If} ${FileExists} "C:\eQuake\id1\pak1.pak"
     StrCpy $0 "C:\eQuake\id1"
-    Goto FullVersion
-  ${ElseIf} ${FileExists} "D:\eQuake\id1\pak1.pak"
+    !insertmacro ValidatePak $0
+  ${EndIf}
+  ${If} ${FileExists} "D:\eQuake\id1\pak1.pak"
     StrCpy $0 "D:\eQuake\id1"
-    Goto FullVersion
-  ${ElseIf} ${FileExists} "E:\eQuake\id1\pak1.pak"
+    !insertmacro ValidatePak $0
+  ${EndIf}
+  ${If} ${FileExists} "E:\eQuake\id1\pak1.pak"
     StrCpy $0 "E:\eQuake\id1"
-    Goto FullVersion
-  ${ElseIf} ${FileExists} "C:\Games\eQuake\id1\pak1.pak"
+    !insertmacro ValidatePak $0
+  ${EndIf}
+  ${If} ${FileExists} "C:\Games\eQuake\id1\pak1.pak"
     StrCpy $0 "C:\Games\eQuake\id1"
-    Goto FullVersion
-  ${ElseIf} ${FileExists} "D:\Games\eQuake\id1\pak1.pak"
+    !insertmacro ValidatePak $0
+  ${EndIf}
+  ${If} ${FileExists} "D:\Games\eQuake\id1\pak1.pak"
     StrCpy $0 "D:\Games\eQuake\id1"
-    Goto FullVersion
-  ${ElseIf} ${FileExists} "E:\Games\eQuake\id1\pak1.pak"
+    !insertmacro ValidatePak $0
+  ${EndIf}
+  ${If} ${FileExists} "E:\Games\eQuake\id1\pak1.pak"
     StrCpy $0 "E:\Games\eQuake\id1"
-    Goto FullVersion
-  ${ElseIf} ${FileExists} "C:\Program Files\eQuake\id1\pak1.pak"
+    !insertmacro ValidatePak $0
+  ${EndIf}
+  ${If} ${FileExists} "C:\Program Files\eQuake\id1\pak1.pak"
     StrCpy $0 "C:\Program Files\eQuake\id1"
-    Goto FullVersion
-  ${ElseIf} ${FileExists} "C:\fQuake\id1\pak1.pak"
+    !insertmacro ValidatePak $0
+  ${EndIf}
+  ${If} ${FileExists} "C:\fQuake\id1\pak1.pak"
     StrCpy $0 "C:\fQuake\id1"
-    Goto FullVersion
-  ${ElseIf} ${FileExists} "D:\fQuake\id1\pak1.pak"
+    !insertmacro ValidatePak $0
+  ${EndIf}
+  ${If} ${FileExists} "D:\fQuake\id1\pak1.pak"
     StrCpy $0 "D:\fQuake\id1"
-    Goto FullVersion
-  ${ElseIf} ${FileExists} "E:\fQuake\id1\pak1.pak"
+    !insertmacro ValidatePak $0
+  ${EndIf}
+  ${If} ${FileExists} "E:\fQuake\id1\pak1.pak"
     StrCpy $0 "E:\fQuake\id1"
-    Goto FullVersion
-  ${ElseIf} ${FileExists} "C:\Games\fQuake\id1\pak1.pak"
+    !insertmacro ValidatePak $0
+  ${EndIf}
+  ${If} ${FileExists} "C:\Games\fQuake\id1\pak1.pak"
     StrCpy $0 "C:\Games\fQuake\id1"
-    Goto FullVersion
-  ${ElseIf} ${FileExists} "D:\Games\fQuake\id1\pak1.pak"
+    !insertmacro ValidatePak $0
+  ${EndIf}
+  ${If} ${FileExists} "D:\Games\fQuake\id1\pak1.pak"
     StrCpy $0 "D:\Games\fQuake\id1"
-    Goto FullVersion
-  ${ElseIf} ${FileExists} "E:\Games\fQuake\id1\pak1.pak"
+    !insertmacro ValidatePak $0
+  ${EndIf}
+  ${If} ${FileExists} "E:\Games\fQuake\id1\pak1.pak"
     StrCpy $0 "E:\Games\fQuake\id1"
-    Goto FullVersion
-  ${ElseIf} ${FileExists} "C:\Program Files\fQuake\id1\pak1.pak"
+    !insertmacro ValidatePak $0
+  ${EndIf}
+  ${If} ${FileExists} "C:\Program Files\fQuake\id1\pak1.pak"
     StrCpy $0 "C:\Program Files\fQuake\id1"
-    Goto FullVersion
-  ${ElseIf} ${FileExists} "C:\nQuake\id1\pak1.pak"
+    !insertmacro ValidatePak $0
+  ${EndIf}
+  ${If} ${FileExists} "C:\nQuake\id1\pak1.pak"
     StrCpy $0 "C:\nQuake\id1"
-    Goto FullVersion
-  ${ElseIf} ${FileExists} "D:\nQuake\id1\pak1.pak"
+    !insertmacro ValidatePak $0
+  ${EndIf}
+  ${If} ${FileExists} "D:\nQuake\id1\pak1.pak"
     StrCpy $0 "D:\nQuake\id1"
-    Goto FullVersion
-  ${ElseIf} ${FileExists} "E:\nQuake\id1\pak1.pak"
+    !insertmacro ValidatePak $0
+  ${EndIf}
+  ${If} ${FileExists} "E:\nQuake\id1\pak1.pak"
     StrCpy $0 "E:\nQuake\id1"
-    Goto FullVersion
-  ${ElseIf} ${FileExists} "C:\Games\nQuake\id1\pak1.pak"
+    !insertmacro ValidatePak $0
+  ${EndIf}
+  ${If} ${FileExists} "C:\Games\nQuake\id1\pak1.pak"
     StrCpy $0 "C:\Games\nQuake\id1"
-    Goto FullVersion
-  ${ElseIf} ${FileExists} "D:\Games\nQuake\id1\pak1.pak"
+    !insertmacro ValidatePak $0
+  ${EndIf}
+  ${If} ${FileExists} "D:\Games\nQuake\id1\pak1.pak"
     StrCpy $0 "D:\Games\nQuake\id1"
-    Goto FullVersion
-  ${ElseIf} ${FileExists} "E:\Games\nQuake\id1\pak1.pak"
+    !insertmacro ValidatePak $0
+  ${EndIf}
+  ${If} ${FileExists} "E:\Games\nQuake\id1\pak1.pak"
     StrCpy $0 "E:\Games\nQuake\id1"
-    Goto FullVersion
-  ${ElseIf} ${FileExists} "C:\Program Files\nQuake\id1\pak1.pak"
+    !insertmacro ValidatePak $0
+  ${EndIf}
+  ${If} ${FileExists} "C:\Program Files\nQuake\id1\pak1.pak"
     StrCpy $0 "C:\Program Files\nQuake\id1"
-    Goto FullVersion
+    !insertmacro ValidatePak $0
   ${Else}
     Goto FullVersionEnd
   ${EndIf}
   FullVersion:
-  ${GetSize} $0 "/M=pak1.pak /S=0B /G=0" $7 $8 $9
-  ${If} $7 == 34257856
-    !insertmacro MUI_INSTALLOPTIONS_WRITE "fullversion.ini" "Field 1" "Text" "The full version of Quake is not included in this package. However, setup has found what resembles the full version pak1.pak on your harddrive. If this is not the correct file, click Browse to locate the correct pak1.pak. Click Next to continue."
-    !insertmacro MUI_INSTALLOPTIONS_WRITE "fullversion.ini" "Field 3" "State" "$0\pak1.pak"
-  ${EndIf}
+  !insertmacro MUI_INSTALLOPTIONS_WRITE "fullversion.ini" "Field 1" "Text" "The full version of Quake is not included in this package. However, setup has found what resembles the full version pak1.pak on your harddrive. If this is not the correct file, click Browse to locate the correct pak1.pak. Click Next to continue."
+  !insertmacro MUI_INSTALLOPTIONS_WRITE "fullversion.ini" "Field 3" "State" "$0\pak1.pak"
   FullVersionEnd:
   ${If} $OFFLINE == 1
     !insertmacro MUI_INSTALLOPTIONS_WRITE "fullversion.ini" "Field 4" "Type" ""
