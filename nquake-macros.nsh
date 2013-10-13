@@ -40,6 +40,6 @@
 
 # Determines the size of an fQuake section
 !macro DetermineSectionSize PACKAGE
-  ReadINIStr $0 $DISTFILES_INI "size" ${PACKAGE}
+  ReadINIStr $0 $NQUAKE_INI "distfile_sizes" ${PACKAGE}
   StrCpy $SIZE $0
 !macroend

@@ -1,8 +1,8 @@
 ;nQuake NSIS Online Installer Script
-;By Empezar 2007-05-31; Last modified 2007-07-16
+;By Empezar 2007-05-31; Last modified 2007-07-17
 
-!define VERSION "1.4"
-!define SHORTVERSION "14"
+!define VERSION "1.5"
+!define SHORTVERSION "15"
 
 Name "nQuake"
 OutFile "nquake${SHORTVERSION}_installer.exe"
@@ -33,14 +33,11 @@ InstallDirRegKey HKLM "Software\nQuake" "Install_Dir"
 ;----------------------------------------------------
 ;Initialize Variables
 
+Var NQUAKE_INI
 Var DISTFILES_URL
 Var DISTFILES_PATH
-Var DISTFILES_INI
 Var DISTFILES_UPDATE
 Var DISTFILES_KEEP
-Var DISTFILEDATES_INI
-Var INSTALLERVERSIONS_INI
-Var MIRRORS_INI
 Var PAK_LOCATION
 Var REMOVE_MODIFIED_FILES
 Var REMOVE_ALL_FILES
@@ -185,9 +182,15 @@ Section "nQuake" NQUAKE
   Delete "$INSTDIR\MGENVXD.VXD"
   #${locate::RMDirEmpty} "$INSTDIR" /M=*.* $0
 
-  # Backup old config if such exists
+  # Backup old configs if such exist
   ${If} ${FileExists} "$INSTDIR\ezquake\configs\config.cfg"
-    Rename "$INSTDIR\ezquake\configs\config.cfg" "$INSTDIR\ezquake\configs\config.bak"
+    ${GetTime} "" "LS" $2 $3 $4 $5 $6 $7 $8
+    # Fix hour format
+    ${If} $6 < 10
+      StrCpy $6 "0$6"
+    ${EndIf}
+    StrCpy $1 "$4$3$2$6$7$8"
+    Rename "$INSTDIR\ezquake\configs\config.cfg" "$INSTDIR\ezquake\configs\config-$1.cfg"
   ${EndIf}
 
   # Download and install nQuake
@@ -201,6 +204,8 @@ Section "nQuake" NQUAKE
 SectionEnd
 
 Section "" # StartMenu
+
+  RealProgress::SetProgress /NOUNLOAD 100
 
   StrCpy $0 $STARTMENU_FOLDER 1
 
@@ -240,10 +245,10 @@ Section "" # Clean up installation
     FileClose $R0
   FileClose $INSTLOG
 
-  # Copy the downloaded distfiledates.ini to the distfiles directory
+  # Copy nquake.ini to the distfiles directory
   ${If} $DISTFILES_UPDATE == 1
-    CopyFiles $DISTFILEDATES_INI "$DISTFILES_PATH\distfiledates.ini"
-    FileWrite $DISTLOG "distfiledates.ini$\r$\n"
+    CopyFiles $NQUAKE_INI "$DISTFILES_PATH\nquake.ini"
+    FileWrite $DISTLOG "nquake.ini$\r$\n"
   ${EndIf}
 
   FileClose $DISTLOG
@@ -523,14 +528,13 @@ Function MIRRORSELECT
   ${Unless} $OFFLINE == 1
     !insertmacro MUI_INSTALLOPTIONS_EXTRACT "mirrorselect.ini"
     !insertmacro MUI_HEADER_TEXT "Mirror Selection" "Select a mirror from your part of the world."
-    ReadINIStr $0 $MIRRORS_INI "description" 1
 
     # Fix the mirrors for the Preferences page
     StrCpy $0 1
     StrCpy $2 "Randomly selected mirror (Recommended)"
-    ReadINIStr $1 $MIRRORS_INI "description" $0
+    ReadINIStr $1 $NQUAKE_INI "mirror_descriptions" $0
     ${DoUntil} $1 == ""
-      ReadINIStr $1 $MIRRORS_INI "description" $0
+      ReadINIStr $1 $NQUAKE_INI "mirror_descriptions" $0
       ${Unless} $1 == ""
         StrCpy $2 "$2|$1"
       ${EndUnless}
@@ -581,18 +585,23 @@ FunctionEnd
 
 Function .onInit
 
-  GetTempFileName $INSTALLERVERSIONS_INI
-  GetTempFileName $MIRRORS_INI
-  GetTempFileName $DISTFILES_INI
-  GetTempFileName $DISTFILEDATES_INI
+  GetTempFileName $NQUAKE_INI
 
-  inetc::get /NOUNLOAD /CAPTION "Initializing..." /BANNER "nQuake is initializing, please wait..." /TIMEOUT=7000 "${INSTALLER_URL}/installerversions.ini" $INSTALLERVERSIONS_INI \
-"${INSTALLER_URL}/mirrors.ini" $MIRRORS_INI \
-"${INSTALLER_URL}/distfiles.ini" $DISTFILES_INI \
-"${INSTALLER_URL}/distfiledates.ini" $DISTFILEDATES_INI /END
+  inetc::get /NOUNLOAD /CAPTION "Initializing..." /BANNER "nQuake is initializing, please wait..." /TIMEOUT=7000 "${INSTALLER_URL}/nquake.ini" $NQUAKE_INI /END
+
+  # Prompt the user if nquake.ini could not be downloaded
+  ReadINIStr $0 $NQUAKE_INI "mirror_addresses" "1"
+  ${If} $0 == ""
+    MessageBox MB_YESNO|MB_ICONEXCLAMATION "Are you trying to install nQuake offline?" IDNO Online
+    StrCpy $OFFLINE 1
+    Goto InitEnd
+    Online:
+    MessageBox MB_OK|MB_ICONEXCLAMATION "Could not download nquake.ini. Please try again later."
+    Abort
+  ${EndUnless}
 
   # Prompt the user if there are newer installer versions available
-  ReadINIStr $0 $INSTALLERVERSIONS_INI "versions" "windows"
+  ReadINIStr $0 $NQUAKE_INI "versions" "windows"
   ${VersionConvert} ${VERSION} "" $R0
   ${VersionCompare} $R0 $0 $1
   ${If} $1 == 2
@@ -602,46 +611,28 @@ Function .onInit
   ${EndIf}
   ContinueInstall:
 
-  # Prompt the user if mirrors.ini could not be downloaded
-  ReadINIStr $0 $MIRRORS_INI "mirrors" "1"
-  ${If} $0 == ""
-    MessageBox MB_YESNO|MB_ICONEXCLAMATION "Are you trying to install nQuake offline?" IDNO Online
-    StrCpy $OFFLINE 1
-    Goto InitEnd
-    Online:
-    MessageBox MB_OK|MB_ICONEXCLAMATION "Could not download mirrors.ini. Please try again later."
-    Abort
-  ${EndUnless}
-
-  # Download distfiles.ini
-  ReadINIStr $0 $DISTFILES_INI "size" "qsw106.zip"
-  ${If} $0 == ""
-    MessageBox MB_OK|MB_ICONEXCLAMATION "Setup could not download distfiles.ini.$\r$\n$\r$\nThe download size displayed will be inaccurate."
-    SectionSetSize ${NQUAKE} 86508
-  ${Else}
-    # Determine sizes on all the sections
-    !insertmacro DetermineSectionSize qsw106.zip
-    StrCpy $R0 $SIZE
-    !insertmacro DetermineSectionSize nquake.zip
-    StrCpy $R1 $SIZE
-    !insertmacro DetermineSectionSize ezquake.zip
-    StrCpy $R2 $SIZE
-    !insertmacro DetermineSectionSize eyecandy.zip
-    StrCpy $R3 $SIZE
-    !insertmacro DetermineSectionSize frogbot.zip
-    StrCpy $R4 $SIZE
-    !insertmacro DetermineSectionSize maps.zip
-    StrCpy $R5 $SIZE
-    !insertmacro DetermineSectionSize demos.zip
-    StrCpy $R6 $SIZE
-    IntOp $0 $R0 + $R1
-    IntOp $0 $0 + $R2
-    IntOp $0 $0 + $R3
-    IntOp $0 $0 + $R4
-    IntOp $0 $0 + $R5
-    IntOp $0 $0 + $R6
-    SectionSetSize ${NQUAKE} $0
-  ${EndIf}
+  # Determine sizes on all the sections
+  !insertmacro DetermineSectionSize qsw106.zip
+  StrCpy $R0 $SIZE
+  !insertmacro DetermineSectionSize nquake.zip
+  StrCpy $R1 $SIZE
+  !insertmacro DetermineSectionSize ezquake.zip
+  StrCpy $R2 $SIZE
+  !insertmacro DetermineSectionSize eyecandy.zip
+  StrCpy $R3 $SIZE
+  !insertmacro DetermineSectionSize frogbot.zip
+  StrCpy $R4 $SIZE
+  !insertmacro DetermineSectionSize maps.zip
+  StrCpy $R5 $SIZE
+  !insertmacro DetermineSectionSize demos.zip
+  StrCpy $R6 $SIZE
+  IntOp $0 $R0 + $R1
+  IntOp $0 $0 + $R2
+  IntOp $0 $0 + $R3
+  IntOp $0 $0 + $R4
+  IntOp $0 $0 + $R5
+  IntOp $0 $0 + $R6
+  SectionSetSize ${NQUAKE} $0
 
   InitEnd:
 
@@ -739,7 +730,7 @@ FunctionEnd
 Function .checkDistfileDate
   Pop $R0
   StrCpy $R1 0
-  ReadINIStr $0 $DISTFILEDATES_INI "dates" $R0
+  ReadINIStr $0 $NQUAKE_INI "distfile_dates" $R0
   ${If} ${FileExists} "$DISTFILES_PATH\$R0"
     ${GetTime} "$DISTFILES_PATH\$R0" M $2 $3 $4 $5 $6 $7 $8
     # Fix hour format
@@ -750,7 +741,7 @@ Function .checkDistfileDate
     ${If} $1 < $0
       StrCpy $R1 1
     ${Else}
-      ReadINIStr $1 "$DISTFILES_PATH\distfiledates.ini" "dates" $R0
+      ReadINIStr $1 "$DISTFILES_PATH\nquake.ini" "distfile_dates" $R0
       ${Unless} $1 == ""
         ${If} $1 < $0
           StrCpy $R1 1
@@ -828,9 +819,9 @@ Function .determineMirror
   ${If} $R0 == "Randomly selected mirror (Recommended)"
     # Get amount of mirrors ($0 = amount of mirrors)
     StrCpy $0 1
-    ReadINIStr $1 $MIRRORS_INI "description" $0
+    ReadINIStr $1 $NQUAKE_INI "mirror_descriptions" $0
     ${DoUntil} $1 == ""
-      ReadINIStr $1 $MIRRORS_INI "description" $0
+      ReadINIStr $1 $NQUAKE_INI "mirror_descriptions" $0
       IntOp $0 $0 + 1
     ${LoopUntil} $1 == ""
     IntOp $0 $0 - 2
@@ -853,14 +844,14 @@ Function .determineMirror
     ${DoUntil} $1 <= $0
       IntOp $1 $1 - $0
     ${LoopUntil} $1 <= $0
-    ReadINIStr $DISTFILES_URL $MIRRORS_INI "mirrors" $1
-    ReadINIStr $0 $MIRRORS_INI "description" $1
+    ReadINIStr $DISTFILES_URL $NQUAKE_INI "mirror_addresses" $1
+    ReadINIStr $0 $NQUAKE_INI "mirror_descriptions" $1
   ${Else}
     ${For} $0 1 1000
-      ReadINIStr $R1 $MIRRORS_INI "description" $0
+      ReadINIStr $R1 $NQUAKE_INI "mirror_descriptions" $0
       ${If} $R0 == $R1
-        ReadINIStr $DISTFILES_URL $MIRRORS_INI "mirrors" $0
-        ReadINIStr $0 $MIRRORS_INI "description" $0
+        ReadINIStr $DISTFILES_URL $NQUAKE_INI "mirror_addresses" $0
+        ReadINIStr $0 $NQUAKE_INI "mirror_descriptions" $0
         ${ExitFor}
       ${EndIf}
     ${Next}
