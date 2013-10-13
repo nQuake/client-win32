@@ -1,8 +1,8 @@
 ;nQuake NSIS Online Installer Script
-;By Empezar 2007-05-31; Last modified 2007-07-23
+;By Empezar 2007-05-31; Last modified 2007-07-25
 
-!define VERSION "1.5b"
-!define SHORTVERSION "15b"
+!define VERSION "1.6"
+!define SHORTVERSION "16"
 
 Name "nQuake"
 OutFile "nquake${SHORTVERSION}_installer.exe"
@@ -28,6 +28,7 @@ InstallDirRegKey HKLM "Software\nQuake" "Install_Dir"
 !include "Locate.nsh"
 !include "VersionCompare.nsh"
 !include "VersionConvert.nsh"
+!include "WinMessages.nsh"
 !include "nquake-macros.nsh"
 
 ;----------------------------------------------------
@@ -47,8 +48,12 @@ Var INSTLOG
 Var DISTLOGTMP
 Var DISTLOG
 Var DISTFILES
+Var ERRLOGTMP
+Var ERRLOG
+Var ERRORS
 Var SIZE
 Var OFFLINE
+Var RETRIES
 
 ;----------------------------------------------------
 ;Interface Settings
@@ -65,8 +70,8 @@ Var OFFLINE
 ;----------------------------------------------------
 ;Pages
 
+!define MUI_PAGE_CUSTOMFUNCTION_PRE "WelcomeShow"
 !define MUI_WELCOMEPAGE_TITLE "nQuake Installation Wizard"
-!define MUI_WELCOMEPAGE_TEXT "This is the installation wizard of nQuake, a QuakeWorld package made for newcomers, or those who just want to get on with the fragging as soon as possible!\r\n\r\nThis is an online installer and therefore requires a stable internet connection."
 !insertmacro MUI_PAGE_WELCOME
 
 LicenseForceSelection checkbox "I agree to these terms and conditions"
@@ -81,8 +86,13 @@ Page custom KEEPDISTFILES
 
 !insertmacro MUI_PAGE_STARTMENU "Application" $STARTMENU_FOLDER
 
+
+ShowInstDetails "nevershow"
 !insertmacro MUI_PAGE_INSTFILES
 
+Page custom ERRORS
+
+!define MUI_PAGE_CUSTOMFUNCTION_SHOW "FinishShow"
 !define MUI_FINISHPAGE_RUN "$INSTDIR/ezquake-gl.exe"
 !define MUI_FINISHPAGE_RUN_TEXT "Launch QuakeWorld"
 !define MUI_FINISHPAGE_SHOWREADME "http://www.quakeworld.nu"
@@ -136,14 +146,14 @@ Section "" # Prepare installation
 
   GetTempFileName $INSTLOGTMP
   GetTempFileName $DISTLOGTMP
+  GetTempFileName $ERRLOGTMP
   FileOpen $INSTLOG $INSTLOGTMP w
   FileOpen $DISTLOG $DISTLOGTMP w
+  FileOpen $ERRLOG $ERRLOGTMP a
 
 SectionEnd
 
 Section "nQuake" NQUAKE
-
-  SectionIn 1 RO
 
   # Download and install pak0.pak (shareware data)
   ${Unless} ${FileExists} "$INSTDIR\ID1\PAK0.PAK"
@@ -230,6 +240,7 @@ SectionEnd
 
 Section "" # Clean up installation
 
+  FileClose $ERRLOG
   FileClose $INSTLOG
 
   # Write install.log
@@ -586,6 +597,36 @@ Function KEEPDISTFILES
 
 FunctionEnd
 
+Function ERRORS
+
+  ${If} $ERRORS > 0
+    # Read errors from error log
+    StrCpy $1 ""
+    FileOpen $R0 $ERRLOGTMP r
+    ClearErrors
+    FileRead $R0 $0
+    StrCpy $1 $0
+    ${DoUntil} ${Errors}
+      FileRead $R0 $0
+      ${Unless} $0 == ""
+        StrCpy $1 "$1|$0"
+      ${EndUnless}
+    ${LoopUntil} ${Errors}
+
+    !insertmacro MUI_INSTALLOPTIONS_EXTRACT "errors.ini"
+    ${If} $ERRORS == 1
+      !insertmacro MUI_HEADER_TEXT "Error" "An error occurred during the installation of nQuake."
+      !insertmacro MUI_INSTALLOPTIONS_WRITE "errors.ini" "Field 1" "Text" "There was an error during the installation of nQuake. See below for more information."
+    ${Else}
+      !insertmacro MUI_HEADER_TEXT "Errors" "Some errors occurred during the installation of nQuake."
+      !insertmacro MUI_INSTALLOPTIONS_WRITE "errors.ini" "Field 1" "Text" "There were some errors during the installation of nQuake. See below for more information."
+    ${EndIf}
+    !insertmacro MUI_INSTALLOPTIONS_WRITE "errors.ini" "Field 2" "ListItems" $1
+    !insertmacro MUI_INSTALLOPTIONS_DISPLAY "errors.ini"
+  ${EndIf}
+
+FunctionEnd
+
 Function un.UNINSTALL
 
   !insertmacro MUI_INSTALLOPTIONS_EXTRACT "uninstall.ini"
@@ -607,20 +648,50 @@ FunctionEnd
 ;----------------------------------------------------
 ;Functions
 
+Function WelcomeShow
+  ${Unless} $OFFLINE == 1
+    !insertmacro MUI_INSTALLOPTIONS_WRITE "ioSpecial.ini" "Field 3" "Text" "This is the installation wizard of nQuake, a QuakeWorld package made for newcomers, or those who just want to get on with the fragging as soon as possible!\r\n\r\nThis is an online installer and therefore requires a stable internet connection."
+  ${Else}
+    !insertmacro MUI_INSTALLOPTIONS_WRITE "ioSpecial.ini" "Field 3" "Text" "This is the installation wizard of nQuake, a QuakeWorld package made for newcomers, or those who just want to get on with the fragging as soon as possible!"
+  ${EndUnless}
+FunctionEnd
+
+Function FinishShow
+  # Hide the Back button on the finish page if there were no errors
+  ${Unless} $ERRORS > 0
+    GetDlgItem $R0 $HWNDPARENT 3
+    EnableWindow $R0 0
+  ${EndUnless}
+  # Hide the community link if the installer is in offline mode
+  ${If} $OFFLINE == 1
+    !insertmacro MUI_INSTALLOPTIONS_READ $R0 "ioSpecial.ini" "Field 5" "HWND"
+    ShowWindow $R0 ${SW_HIDE}
+  ${EndIf}
+FunctionEnd
+
 Function .onInit
 
   GetTempFileName $NQUAKE_INI
 
+  Start:
   inetc::get /NOUNLOAD /CAPTION "Initializing..." /BANNER "nQuake is initializing, please wait..." /TIMEOUT=7000 "${INSTALLER_URL}/nquake.ini" $NQUAKE_INI /END
 
   # Prompt the user if nquake.ini could not be downloaded
   ReadINIStr $0 $NQUAKE_INI "mirror_addresses" "1"
   ${If} $0 == ""
-    MessageBox MB_YESNO|MB_ICONEXCLAMATION "Are you trying to install nQuake offline?" IDNO Online
-    StrCpy $OFFLINE 1
-    Goto InitEnd
+    ${Unless} $RETRIES > 0
+      MessageBox MB_YESNO|MB_ICONEXCLAMATION "Are you trying to install nQuake offline?" IDNO Online
+      StrCpy $OFFLINE 1
+      Goto InitEnd
+    ${EndUnless}
     Online:
+    ${Unless} $RETRIES == 2
+      MessageBox MB_RETRYCANCEL|MB_ICONEXCLAMATION "Could not download nquake.ini." IDCANCEL Cancel
+      IntOp $RETRIES $RETRIES + 1
+      Goto Start
+    ${EndUnless}
     MessageBox MB_OK|MB_ICONEXCLAMATION "Could not download nquake.ini. Please try again later."
+    Cancel:
     Abort
   ${EndUnless}
 
@@ -664,6 +735,7 @@ FunctionEnd
 
 Function .abortInstallation
 
+  FileClose $ERRLOG
   FileClose $INSTLOG
 
   # Write install.log
@@ -790,10 +862,12 @@ Function .installDistfile
     ${If} $0 == "Cancelled"
       Call .abortInstallation
     ${Else}
-      DetailPrint "Error downloading $R0: $0"
+      DetailPrint 'Error downloading "$R0": $0'
       MessageBox MB_ABORTRETRYIGNORE|MB_ICONEXCLAMATION "Error downloading $R0: $0" IDIGNORE Ignore IDRETRY Retry
       Call .abortInstallation
       Ignore:
+      FileWrite $ERRLOG 'Error downloading "$R0": $0|'
+      IntOp $ERRORS $ERRORS + 1
     ${EndIf}
   ${Else}
     Pop $R9
@@ -827,11 +901,13 @@ Function .installSection
   ${OrIf} $0 == "Error extracting from ZIP file"
   ${OrIf} $0 == "File not found in ZIP file"
     DetailPrint "Extraction error: $0"
+    FileWrite $ERRLOG 'Error extracting "$R0": $0|'
+    IntOp $ERRORS $ERRORS + 1
   ${Else}
     ${DoUntil} $0 == ""
       ${Unless} $0 == "success"
-        FileWrite $INSTLOG "$0$\r$\n"
         DetailPrint "Extract: $0"
+        FileWrite $INSTLOG "$0$\r$\n"
       ${EndUnless}
       Pop $0
     ${LoopUntil} $0 == ""
