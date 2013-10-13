@@ -1,8 +1,8 @@
 ;nQuake NSIS Online Installer Script
-;By Empezar 2007-05-31; Last modified 2007-07-18
+;By Empezar 2007-05-31; Last modified 2007-07-23
 
-!define VERSION "1.5a"
-!define SHORTVERSION "15a"
+!define VERSION "1.5b"
+!define SHORTVERSION "15b"
 
 Name "nQuake"
 OutFile "nquake${SHORTVERSION}_installer.exe"
@@ -821,7 +821,7 @@ Function .installSection
     !insertmacro InstallDistfile $R0
   ${EndIf}
   Pop $0
-  ${If} $0 == "Error opening ZIP file: $R0"
+  ${If} $0 == "Error opening ZIP file"
   ${OrIf} $0 == "Error opening output file(s)"
   ${OrIf} $0 == "Error writing output file(s)"
   ${OrIf} $0 == "Error extracting from ZIP file"
