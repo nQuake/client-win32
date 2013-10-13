@@ -26,9 +26,9 @@ LangString NSISUNZ_EXTRACT ${LANG_ENGLISH}                             "Extract:
 # During install
 LangString CLEANING_UP ${LANG_ENGLISH}                                 "Cleaning up installation, please be patient..."
 LangString REMOVED_EMPTY_DIRECTORIES ${LANG_ENGLISH}                   "Removed $0 empty directories"
-LangString REMOVE_DISTFILES ${LANG_ENGLISH}                            "Do you wish to remove the downloaded distfiles?$\r$\nNote: They can be used to install nQuake offline!$\r$\n$\r$\nLocation: $DISTFILES_PATH"
+LangString KEEP_DISTFILES ${LANG_ENGLISH}                              "Do you wish to keep the downloaded distfiles?$\r$\nNote: They can be used to install nQuake offline!$\r$\n$\r$\nLocation: $DISTFILES_PATH"
 LangString ABORT_REMOVE_INSTFILES ${LANG_ENGLISH}                      "Installation aborted.$\r$\n$\r$\nDo you wish to remove the installed files?"
-LangString ABORT_REMOVE_DISTFILES ${LANG_ENGLISH}                      "Do you wish to remove the downloaded distfiles?"
+LangString ABORT_KEEP_DISTFILES ${LANG_ENGLISH}                        "Do you wish to keep the downloaded distfiles?"
 # Uninstallation confirmation (when install.log is missing)
 LangString UNINSTALL_CONFIRMATION ${LANG_ENGLISH}                      "This will remove *all* files in your Quake® directory!$\r$\n$\r$\nAre you sure you want to continue?"
 # Pages
@@ -42,9 +42,10 @@ LangString PREFERENCESPAGE_MIRROR_TEXT ${LANG_ENGLISH}                 "Please s
 LangString PREFERENCESPAGE_RANDOM_MIRROR ${LANG_ENGLISH}               "Randomly selected mirror (Recommended)"
 LangString PREFERENCESPAGE_DOWNLOAD_TEXT ${LANG_ENGLISH}               "Please select where to download the distribution files:"
 LangString PREFERENCESPAGE_UPDATE_DISTFILES ${LANG_ENGLISH}            "Download updated versions of locally stored distribution files."
-LangString PREFERENCESPAGE_PURCHASE_TITLE ${LANG_ENGLISH}              "Purchase Information"
-LangString PREFERENCESPAGE_FULLVERSION_TEXT ${LANG_ENGLISH}            "The registered version of Quake® offers:\r\n * Three new single-player episodes (22 maps in total).\r\n * Six deathmatch maps (4 of them being tournament maps).\r\n * Ability to create maps and play on user-developed maps.\r\n * Ability to develop level creation utilities.\r\n * Ability to play the official Mission Packs."
-LangString PREFERENCESPAGE_BUYCD_TEXT ${LANG_ENGLISH}                  "Buy Quake® (CD-ROM)"
+LangString PREFERENCESPAGE_REGISTERED_TITLE ${LANG_ENGLISH}            "Quake Full Version Data"
+LangString PREFERENCESPAGE_REGISTERED_DATA_FOUND ${LANG_ENGLISH}       "Found pak1.pak in $0, it will be copied to your new nQuake installation."
+LangString PREFERENCESPAGE_FIND_PAK1 ${LANG_ENGLISH}                   "nQuake only contains the Quake shareware content and custom maps (if selected). To access full version content in nQuake, you need the pak1.pak file from your Quake installation. To include this file in your nQuake installation, please use the browse button below to find it."
+LangString PREFERENCESPAGE_LOST_CD ${LANG_ENGLISH}                     "Lost your Quake CD?"
 LangString FINISHPAGE_SHOWREADME_TEXT ${LANG_ENGLISH}                  "Visit the leading QuakeWorld® Community Site"
 LangString FINISHPAGE_SHOWREADME_LINK ${LANG_ENGLISH}                  "http://www.quakeworld.nu"
 # Sections

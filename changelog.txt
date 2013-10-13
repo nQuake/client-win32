@@ -1,4 +1,10 @@
-2007-07-04 - nQuake v1.01
+2007-07-09 - nQuake v1.1
+
+* Installer now asks if it should keep the distribution files instead of asking to delete them.
+* Installer now looks for pak1.pak on 21 likely locations. If pak1.pak is not found, the user gets to browse for it.
+* Fixed the bug where nQuake wouldn't detect newer versions if the current version was x.0x.
+
+2007-07-05 - nQuake v1.01
 
 * Added link to gfx.qwdrama.com in Links.
 * Fixed bug where installer doesn't remove distfiledates.ini from nquake-distfiles.

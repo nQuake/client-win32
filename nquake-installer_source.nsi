@@ -1,8 +1,8 @@
 ;nQuake NSIS Online Installer Script
-;By Empezar 2007-05-31; Last modified 2007-07-03
+;By Empezar 2007-05-31; Last modified 2007-07-09
 
-!define VERSION "1.01"
-!define SHORTVERSION "101"
+!define VERSION "1.1"
+!define SHORTVERSION "11"
 
 Name "nQuake"
 OutFile "nquake${SHORTVERSION}_installer.exe"
@@ -36,7 +36,7 @@ InstallDirRegKey HKLM "Software\$(^Name)" "Install_Dir"
 !include "LogicLib.nsh"
 !include "Time.nsh"
 !include "Locate.nsh"
-!include "VersionCheck.nsh"
+!include "VersionCompare.nsh"
 !include "nQuakeMacros.nsh"
 
 ;----------------------------------------------------
@@ -49,6 +49,7 @@ Var DISTFILES_UPDATE
 Var DISTFILEDATES_INI
 Var INSTALLERVERSIONS_INI
 Var MIRRORS_INI
+Var PAK_LOCATION
 Var STARTMENU_FOLDER
 Var INSTLOGTMP
 Var INSTLOG
@@ -129,6 +130,7 @@ Section "" # Prepare installation
 
   !insertmacro MUI_INSTALLOPTIONS_READ $DISTFILES_PATH "iopreferences.ini" "Field 5" "State"
   !insertmacro MUI_INSTALLOPTIONS_READ $DISTFILES_UPDATE "iopreferences.ini" "Field 6" "State"
+  !insertmacro MUI_INSTALLOPTIONS_READ $PAK_LOCATION "iopreferences.ini" "Field 9" "State"
 
   ${Unless} ${FileExists} "$DISTFILES_PATH\*.*"
     CreateDirectory $DISTFILES_PATH
@@ -157,6 +159,11 @@ Section !$(NQUAKE) NQUAKE
   Rename "$INSTDIR\ID1" "$INSTDIR\id1"
   Rename "$INSTDIR\id1\PAK0.PAK" "$INSTDIR\id1\pak0.pak"
   FileWrite $INSTLOG "id1\pak0.pak$\r$\n"
+  # Copy pak1.pak if it was found or specified
+  ${If} $PAK_LOCATION != ""
+    CopyFiles $PAK_LOCATION "$INSTDIR\id1\pak1.pak"
+    FileWrite $INSTLOG "id1\pak1.pak$\r$\n"
+  ${EndIf}
   # Remove crap files from Quake directory
   Delete "$INSTDIR\CWSDPMI.EXE"
   Delete "$INSTDIR\QLAUNCH.EXE"
@@ -335,7 +342,7 @@ Function .onInit
   GetTempFileName $INSTALLERVERSIONS_INI
   inetc::get /NOUNLOAD /CAPTION "Initializing..." /BANNER "nQuake is initializing, please wait...$\r$\n$\r$\nDownloading version information (1/4)..." /TIMEOUT=7000 "${INSTALLER_URL}/${INSTALLERVERSIONS_INI_REMOTE}" $INSTALLERVERSIONS_INI /END
   ReadINIStr $0 $INSTALLERVERSIONS_INI "versions" "windows"
-  ${VersionCheck} ${VERSION} $0 $1
+  ${VersionCompare} ${VERSION} $0 $1
   ${If} $1 == 2
     MessageBox MB_YESNO|MB_ICONEXCLAMATION "A newer version of nQuake is available.$\r$\n$\r$\nDo you wish to be taken to the download page?" IDNO ContinueInstall
     ExecShell "open" ${INSTALLER_URL}
@@ -452,10 +459,82 @@ Function PREFERENCESPAGE
   !insertmacro MUI_INSTALLOPTIONS_WRITE "iopreferences.ini" "Field 2" "Text" $(PREFERENCESPAGE_MIRROR_TEXT)
   !insertmacro MUI_INSTALLOPTIONS_WRITE "iopreferences.ini" "Field 4" "Text" $(PREFERENCESPAGE_DOWNLOAD_TEXT)
   !insertmacro MUI_INSTALLOPTIONS_WRITE "iopreferences.ini" "Field 6" "Text" $(PREFERENCESPAGE_UPDATE_DISTFILES)
-  !insertmacro MUI_INSTALLOPTIONS_WRITE "iopreferences.ini" "Field 7" "Text" $(PREFERENCESPAGE_PURCHASE_TITLE)
-  !insertmacro MUI_INSTALLOPTIONS_WRITE "iopreferences.ini" "Field 8" "Text" $(PREFERENCESPAGE_FULLVERSION_TEXT)
-  !insertmacro MUI_INSTALLOPTIONS_WRITE "iopreferences.ini" "Field 9" "Text" $(PREFERENCESPAGE_BUYCD_TEXT)
+  !insertmacro MUI_INSTALLOPTIONS_WRITE "iopreferences.ini" "Field 7" "Text" $(PREFERENCESPAGE_REGISTERED_TITLE)
+  !insertmacro MUI_INSTALLOPTIONS_WRITE "iopreferences.ini" "Field 8" "Text" $(PREFERENCESPAGE_FIND_PAK1)
+  !insertmacro MUI_INSTALLOPTIONS_WRITE "iopreferences.ini" "Field 10" "Text" $(PREFERENCESPAGE_LOST_CD)
   !insertmacro MUI_HEADER_TEXT $(PREFERENCESPAGE_HEADER) $(PREFERENCESPAGE_SUBHEADER)
+
+  ${If} ${FileExists} "C:\Quake\id1\pak1.pak"
+    StrCpy $0 "C:\Quake\id1"
+    Goto DataFound
+  ${OrIf} ${FileExists} "D:\Quake\id1\pak1.pak"
+    StrCpy $0 "D:\Quake\id1"
+    Goto DataFound
+  ${OrIf} ${FileExists} "E:\Quake\id1\pak1.pak"
+    StrCpy $0 "E:\Quake\id1"
+    Goto DataFound
+  ${OrIf} ${FileExists} "C:\Games\Quake\id1\pak1.pak"
+    StrCpy $0 "C:\Games\Quake\id1"
+    Goto DataFound
+  ${OrIf} ${FileExists} "D:\Games\Quake\id1\pak1.pak"
+    StrCpy $0 "D:\Games\Quake\id1"
+    Goto DataFound
+  ${OrIf} ${FileExists} "E:\Games\Quake\id1\pak1.pak"
+    StrCpy $0 "E:\Games\Quake\id1"
+    Goto DataFound
+  ${OrIf} ${FileExists} "C:\Program Files\Quake\id1\pak1.pak"
+    StrCpy $0 "C:\Program Files\Quake\id1"
+    Goto DataFound
+  ${OrIf} ${FileExists} "C:\eQuake\id1\pak1.pak"
+    StrCpy $0 "C:\eQuake\id1"
+    Goto DataFound
+  ${OrIf} ${FileExists} "D:\eQuake\id1\pak1.pak"
+    StrCpy $0 "D:\eQuake\id1"
+    Goto DataFound
+  ${OrIf} ${FileExists} "E:\eQuake\id1\pak1.pak"
+    StrCpy $0 "E:\eQuake\id1"
+    Goto DataFound
+  ${OrIf} ${FileExists} "C:\Games\eQuake\id1\pak1.pak"
+    StrCpy $0 "C:\Games\eQuake\id1"
+    Goto DataFound
+  ${OrIf} ${FileExists} "D:\Games\eQuake\id1\pak1.pak"
+    StrCpy $0 "D:\Games\eQuake\id1"
+    Goto DataFound
+  ${OrIf} ${FileExists} "E:\Games\eQuake\id1\pak1.pak"
+    StrCpy $0 "E:\Games\eQuake\id1"
+    Goto DataFound
+  ${OrIf} ${FileExists} "C:\Program Files\eQuake\id1\pak1.pak"
+    StrCpy $0 "C:\Program Files\eQuake\id1"
+    Goto DataFound
+  ${OrIf} ${FileExists} "C:\fQuake\id1\pak1.pak"
+    StrCpy $0 "C:\fQuake\id1"
+    Goto DataFound
+  ${OrIf} ${FileExists} "D:\fQuake\id1\pak1.pak"
+    StrCpy $0 "D:\fQuake\id1"
+    Goto DataFound
+  ${OrIf} ${FileExists} "E:\fQuake\id1\pak1.pak"
+    StrCpy $0 "E:\fQuake\id1"
+    Goto DataFound
+  ${OrIf} ${FileExists} "C:\Games\fQuake\id1\pak1.pak"
+    StrCpy $0 "C:\Games\fQuake\id1"
+    Goto DataFound
+  ${OrIf} ${FileExists} "D:\Games\fQuake\id1\pak1.pak"
+    StrCpy $0 "D:\Games\fQuake\id1"
+    Goto DataFound
+  ${OrIf} ${FileExists} "E:\Games\fQuake\id1\pak1.pak"
+    StrCpy $0 "E:\Games\fQuake\id1"
+    Goto DataFound
+  ${OrIf} ${FileExists} "C:\Program Files\fQuake\id1\pak1.pak"
+    StrCpy $0 "C:\Program Files\fQuake\id1"
+    Goto DataFound
+  ${EndIf}
+  Goto DataFoundEnd
+  DataFound:
+    !insertmacro MUI_INSTALLOPTIONS_WRITE "iopreferences.ini" "Field 8" "Text" $(PREFERENCESPAGE_REGISTERED_DATA_FOUND)
+    !insertmacro MUI_INSTALLOPTIONS_WRITE "iopreferences.ini" "Field 9" "Type" ""
+    !insertmacro MUI_INSTALLOPTIONS_WRITE "iopreferences.ini" "Field 9" "State" "$0\pak1.pak"
+    !insertmacro MUI_INSTALLOPTIONS_WRITE "iopreferences.ini" "Field 10" "Type" ""
+  DataFoundEnd:
 
   !insertmacro MUI_INSTALLOPTIONS_DISPLAY "iopreferences.ini"
 
@@ -570,7 +649,7 @@ Function .abortInstallation
 
   # If distfiles.log exists, ask to remove downloaded distfiles
   ${If} ${FileExists} "$DISTFILES_PATH\${DISTLOG}"
-    Messagebox MB_YESNO|MB_ICONEXCLAMATION $(ABORT_REMOVE_DISTFILES) IDNO SkipDistRemoval
+    Messagebox MB_YESNO|MB_ICONEXCLAMATION $(ABORT_KEEP_DISTFILES) IDYES SkipDistRemoval
     # Get line count for distfiles.log
     Push "$DISTFILES_PATH\${DISTLOG}"
     Call .LineCount
@@ -804,7 +883,7 @@ Function .cleanupInstallation
 
   # If distfiles.log exists, ask to remove downloaded distfiles
   ${If} ${FileExists} "$DISTFILES_PATH\${DISTLOG}"
-    Messagebox MB_YESNO|MB_ICONEXCLAMATION $(REMOVE_DISTFILES) IDNO SkipRemoval
+    Messagebox MB_YESNO|MB_ICONEXCLAMATION $(KEEP_DISTFILES) IDYES SkipRemoval
     # Get line count for distfiles.log
     Push "$DISTFILES_PATH\${DISTLOG}"
     Call .LineCount
