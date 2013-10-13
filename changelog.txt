@@ -1,3 +1,23 @@
+2012-08-20 - nQuake v2.1 for Windows
+
+* Setup now checks if nQuake is installed in Program Files, if it is, cfg_use_home 1 is added to config.
+* Added warning about installing nQuake into Program Files folder.
+* Added readme to start menu.
+* Fixed the bug where start menu items would not get removed by uninstall.
+
+2012-08-18 - nQuake v2.0 for OS X
+
+* Reduced amount of distfiles.
+* Installation now removes dud files when pak1.pak is found.
+* Bugfixes.
+
+2012-08-18 - nQuake v2.0 for Linux
+
+* Reduced amount of distfiles.
+* Now checks if 'unzip' is installed before proceeding with install.
+* Installation now removes dud files when pak1.pak is found.
+* Bugfixes.
+
 2012-08-16 - nQuake v2.0 for Windows
 
 * Changed the installer graphics.

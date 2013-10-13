@@ -1,14 +1,16 @@
 ;nQuake NSIS Online Installer Script
-;By Empezar 2007-05-31; Last modified 2012-08-16
+;By Empezar 2007-05-31; Last modified 2012-08-20
 
-!define VERSION "2.0"
-!define SHORTVERSION "20"
+!define VERSION "2.1"
+!define SHORTVERSION "21"
 
 Name "nQuake"
 OutFile "nquake${SHORTVERSION}_installer.exe"
-InstallDir "$PROGRAMFILES\nQuake"
+InstallDir "C:\nQuake"
 
-!define INSTALLER_URL "http://nquake.com" # Note: no trailing slash!
+RequestExecutionLevel admin # Request admin permissions
+
+!define INSTALLER_URL "http://nquake.sourceforge.net" # Note: no trailing slash!
 !define DISTFILES_PATH "C:\nquake-distfiles" # Note: no trailing slash!
 
 # Editing anything below this line is not recommended
@@ -29,11 +31,13 @@ InstallDirRegKey HKLM "Software\nQuake" "Install_Dir"
 !include "VersionCompare.nsh"
 !include "VersionConvert.nsh"
 !include "WinMessages.nsh"
+!include "StrContains.nsh"
 !include "nquake-macros.nsh"
 
 ;----------------------------------------------------
 ;Variables
 
+Var CONFIGCFG
 Var DISTFILES_DELETE
 Var ASSOCIATE_FILES
 Var DISTFILES_PATH
@@ -84,6 +88,7 @@ Page custom MIRRORSELECT
 
 Page custom ASSOCIATION
 
+DirText "Setup will install nQuake in the following folder. To install in a different folder, click Browse and select another folder. Click Next to continue.$\r$\n$\r$\nIt is NOT ADVISABLE to install in the Program Files folder." "Destination Folder" "Browse" "Select the folder to install nQuake in:"
 !insertmacro MUI_PAGE_DIRECTORY
 
 !insertmacro MUI_PAGE_STARTMENU "Application" $STARTMENU_FOLDER
@@ -283,6 +288,8 @@ SectionEnd
 
 Section "" # StartMenu
 
+  SetShellVarContext all
+
   # Copy the first char of the startmenu folder selected during installation
   StrCpy $0 $STARTMENU_FOLDER 1
 
@@ -298,7 +305,8 @@ Section "" # StartMenu
     WriteINIStr "$SMPROGRAMS\$STARTMENU_FOLDER\Links\Custom Graphics.url" "InternetShortcut" "URL" "http://gfx.quakeworld.nu/"
 
     # Create shortcuts
-    CreateShortCut "$SMPROGRAMS\$STARTMENU_FOLDER\Start ezQuake.lnk" "$INSTDIR\ezquake-gl.exe" "" "$INSTDIR\ezquake-gl.exe" 0
+    CreateShortCut "$SMPROGRAMS\$STARTMENU_FOLDER\Play QuakeWorld.lnk" "$INSTDIR\ezquake-gl.exe" "" "$INSTDIR\ezquake-gl.exe" 0
+    CreateShortCut "$SMPROGRAMS\$STARTMENU_FOLDER\Readme.lnk" "$INSTDIR\readme.txt" "" "$INSTDIR\readme.txt" 0
     CreateShortCut "$SMPROGRAMS\$STARTMENU_FOLDER\Uninstall nQuake.lnk" "$INSTDIR\uninstall.exe" "" "$INSTDIR\uninstall.exe" 0
 
     # Write startmenu folder to registry
@@ -326,6 +334,18 @@ Section "" # Clean up installation
       ${LoopUntil} ${Errors}
     FileClose $R0
   FileClose $INSTLOG
+
+  # Check if installed to "program files" and add cfg_use_home 1 if it is
+  ${StrContains} $0 "Program Files" $INSTDIR
+  ${If} $0 != ""
+    FileOpen $CONFIGCFG "$INSTDIR\ezquake\configs\config.cfg" a
+      FileSeek $CONFIGCFG 0 END
+      FileWrite $CONFIGCFG "$\r$\n// Added by nQuake installer$\r$\n"
+      FileWrite $CONFIGCFG "cfg_use_gamedir 0$\r$\n"
+      FileWrite $CONFIGCFG "cfg_use_home 1$\r$\n"
+      FileWrite $CONFIGCFG "cl_mediaroot 1$\r$\n"
+    FileClose $CONFIGCFG
+  ${EndIf}
 
   # Remove downloaded distfiles
   ${If} $DISTFILES_DELETE == 1
@@ -391,6 +411,8 @@ SectionEnd
 ;Uninstaller Section
 
 Section "Uninstall"
+
+  SetShellVarContext all
 
   # Set out path to temporary files
   SetOutPath $TEMP
