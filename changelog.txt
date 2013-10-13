@@ -1,3 +1,12 @@
+2007-07-14 - nQuake v1.2
+
+* nQuake is now the solid package it claims to be - the user has no choices as to what packages are installed.
+* When uninstalling, user gets the choice of removing just the files nQuake installed, or removing the nQuake folder altogether.
+* nQuake now backups old config file (ezquake/configs/config.cfg) if installed into an old Quake directory.
+* Installer no longer temporarily creates a distfiles.log in the distfiles directory (useless).
+* Setup is now clean of popup messages where they could be avoided.
+* The installer has been generally cleaned up.
+
 2007-07-09 - nQuake v1.1
 
 * Installer now asks if it should keep the distribution files instead of asking to delete them.

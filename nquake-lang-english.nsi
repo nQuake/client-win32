@@ -4,10 +4,6 @@
 LangString ^Branding ${LANG_ENGLISH}                                   "nQuake Installer v${VERSION}"
 LangString ^SetupCaption ${LANG_ENGLISH}                               "nQuake Installer"
 LangString ^SpaceRequired ${LANG_ENGLISH}                              "Download size: "
-# Installation types
-LangString INSTTYPE_RECOMMENDED ${LANG_ENGLISH}                        "Recommended"
-LangString INSTTYPE_FULL ${LANG_ENGLISH}                               "Full"
-LangString INSTTYPE_MINIMUM ${LANG_ENGLISH}                            "Minimum"
 # Download page
 LangString NSISDL_DOWNLOAD_ERROR ${LANG_ENGLISH}                       "Download error: $0"
 LangString NSISDL_DOWNLOADING ${LANG_ENGLISH}                          "Downloading %s"
@@ -26,9 +22,9 @@ LangString NSISUNZ_EXTRACT ${LANG_ENGLISH}                             "Extract:
 # During install
 LangString CLEANING_UP ${LANG_ENGLISH}                                 "Cleaning up installation, please be patient..."
 LangString REMOVED_EMPTY_DIRECTORIES ${LANG_ENGLISH}                   "Removed $0 empty directories"
-LangString KEEP_DISTFILES ${LANG_ENGLISH}                              "Do you wish to keep the downloaded distfiles?$\r$\nNote: They can be used to install nQuake offline!$\r$\n$\r$\nLocation: $DISTFILES_PATH"
+LangString KEEP_DISTFILES ${LANG_ENGLISH}                              "Do you wish to keep the downloaded distribution files?$\r$\nNote: They can be used to install nQuake offline!$\r$\n$\r$\nLocation: $DISTFILES_PATH"
 LangString ABORT_REMOVE_INSTFILES ${LANG_ENGLISH}                      "Installation aborted.$\r$\n$\r$\nDo you wish to remove the installed files?"
-LangString ABORT_KEEP_DISTFILES ${LANG_ENGLISH}                        "Do you wish to keep the downloaded distfiles?"
+LangString ABORT_KEEP_DISTFILES ${LANG_ENGLISH}                        "Do you wish to keep the downloaded distribution files?"
 # Uninstallation confirmation (when install.log is missing)
 LangString UNINSTALL_CONFIRMATION ${LANG_ENGLISH}                      "This will remove *all* files in your Quake® directory!$\r$\n$\r$\nAre you sure you want to continue?"
 # Pages
@@ -48,18 +44,6 @@ LangString PREFERENCESPAGE_FIND_PAK1 ${LANG_ENGLISH}                   "nQuake o
 LangString PREFERENCESPAGE_LOST_CD ${LANG_ENGLISH}                     "Lost your Quake CD?"
 LangString FINISHPAGE_SHOWREADME_TEXT ${LANG_ENGLISH}                  "Visit the leading QuakeWorld® Community Site"
 LangString FINISHPAGE_SHOWREADME_LINK ${LANG_ENGLISH}                  "http://www.quakeworld.nu"
-# Sections
-LangString NQUAKE ${LANG_ENGLISH}                                      "QuakeWorld"
-LangString FROGBOT ${LANG_ENGLISH}                                     "Bot System"
-LangString EYECANDY ${LANG_ENGLISH}                                    "Enhanced Graphics"
-LangString MAPS ${LANG_ENGLISH}                                        "Additional Levels"
-LangString DEMOS ${LANG_ENGLISH}                                       "Match Demos"
-# Section descriptions
-LangString DESC_NQUAKE ${LANG_ENGLISH}                                 "The most basic files you need to be able to play QuakeWorld."
-LangString DESC_FROGBOT ${LANG_ENGLISH}                                "Play against a computer controlled opponent when your friends don't have time for games."
-LangString DESC_EYECANDY ${LANG_ENGLISH}                               "These enhanced graphics take QuakeWorld into the 21st century."
-LangString DESC_MAPS ${LANG_ENGLISH}                                   "Custom developed multiplayer levels. Enjoy QuakeWorld on levels which were originally designed for multiplay."
-LangString DESC_DEMOS ${LANG_ENGLISH}                                  "Crack a beer open and enjoy these incredibly fast-paced games which truly demonstrates the superiority of QuakeWorld."
 # Shortcuts
 LangString SHORT_EZQUAKE ${LANG_ENGLISH}                               "Start ezQuake"
 LangString SHORT_NEWS ${LANG_ENGLISH}                                  "Latest News"

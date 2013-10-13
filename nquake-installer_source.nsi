@@ -1,8 +1,8 @@
 ;nQuake NSIS Online Installer Script
-;By Empezar 2007-05-31; Last modified 2007-07-09
+;By Empezar 2007-05-31; Last modified 2007-07-14
 
-!define VERSION "1.1"
-!define SHORTVERSION "11"
+!define VERSION "1.2"
+!define SHORTVERSION "12"
 
 Name "nQuake"
 OutFile "nquake${SHORTVERSION}_installer.exe"
@@ -15,9 +15,8 @@ InstallDir "$PROGRAMFILES\nQuake"
 # Editing anything below this line is not recommended
 ;---------------------------------------------------
 
-InstallDirRegKey HKLM "Software\$(^Name)" "Install_Dir"
+InstallDirRegKey HKLM "Software\nQuake" "Install_Dir"
 !define INSTLOG "install.log"
-!define DISTLOG "distfiles.log"
 !define DISTFILES_INI "distfiles.ini"
 !define DISTFILES_INI_REMOTE "distfiles.ini" # distfiles.ini filename on remote server
 !define DISTFILEDATES_INI "distfiledates.ini"
@@ -46,10 +45,12 @@ Var DISTFILES_URL
 Var DISTFILES_PATH
 Var DISTFILES_INI
 Var DISTFILES_UPDATE
+Var DISTFILES_KEEP
 Var DISTFILEDATES_INI
 Var INSTALLERVERSIONS_INI
 Var MIRRORS_INI
 Var PAK_LOCATION
+Var REMOVE_ALL_FILES
 Var STARTMENU_FOLDER
 Var INSTLOGTMP
 Var INSTLOG
@@ -81,9 +82,10 @@ Var SIZE
 LicenseForceSelection checkbox $(LICENSEPAGE_CHECKBOX)
 !insertmacro MUI_PAGE_LICENSE "license.txt"
 
-!insertmacro MUI_PAGE_COMPONENTS
-
-Page custom PREFERENCESPAGE
+Page custom FULLVERSION
+Page custom DISTFILEFOLDER
+Page custom MIRRORSELECT
+Page custom KEEPDISTFILES
 
 !insertmacro MUI_PAGE_DIRECTORY
 
@@ -100,6 +102,8 @@ Page custom PREFERENCESPAGE
 
 !insertmacro MUI_UNPAGE_CONFIRM
 
+UninstPage custom un.REMOVEFOLDER
+
 !insertmacro MUI_UNPAGE_INSTFILES
 
 ;----------------------------------------------------
@@ -111,15 +115,18 @@ Page custom PREFERENCESPAGE
 ;----------------------------------------------------
 ;Reserve Files
 
-ReserveFile "iopreferences.ini"
+ReserveFile "fullversion.ini"
+ReserveFile "distfilefolder.ini"
+ReserveFile "mirrorselect.ini"
+ReserveFile "keepdistfiles.ini"
 !insertmacro MUI_RESERVEFILE_INSTALLOPTIONS
 
 ;----------------------------------------------------
 ;Installation Types
 
-InstType $(INSTTYPE_RECOMMENDED)
-InstType $(INSTTYPE_FULL)
-InstType $(INSTTYPE_MINIMUM)
+#InstType $(INSTTYPE_RECOMMENDED)
+#InstType $(INSTTYPE_FULL)
+#InstType $(INSTTYPE_MINIMUM)
 
 ;----------------------------------------------------
 ;Installer Sections
@@ -128,9 +135,10 @@ Section "" # Prepare installation
 
   SetOutPath $INSTDIR
 
-  !insertmacro MUI_INSTALLOPTIONS_READ $DISTFILES_PATH "iopreferences.ini" "Field 5" "State"
-  !insertmacro MUI_INSTALLOPTIONS_READ $DISTFILES_UPDATE "iopreferences.ini" "Field 6" "State"
-  !insertmacro MUI_INSTALLOPTIONS_READ $PAK_LOCATION "iopreferences.ini" "Field 9" "State"
+  !insertmacro MUI_INSTALLOPTIONS_READ $DISTFILES_PATH "distfilefolder.ini" "Field 3" "State"
+  !insertmacro MUI_INSTALLOPTIONS_READ $DISTFILES_UPDATE "distfilefolder.ini" "Field 4" "State"
+  !insertmacro MUI_INSTALLOPTIONS_READ $PAK_LOCATION "fullversion.ini" "Field 3" "State"
+  !insertmacro MUI_INSTALLOPTIONS_READ $DISTFILES_KEEP "keepdistfiles.ini" "Field 2" "State"
 
   ${Unless} ${FileExists} "$DISTFILES_PATH\*.*"
     CreateDirectory $DISTFILES_PATH
@@ -146,11 +154,11 @@ Section "" # Prepare installation
 
 SectionEnd
 
-Section !$(NQUAKE) NQUAKE
+Section "nQuake" NQUAKE
 
-  SectionIn 1 2 3 RO
+  SectionIn 1 RO
 
-  # Download and install Quake Shareware
+  # Download and install pak0.pak (shareware data)
   ${Unless} ${FileExists} "$INSTDIR\ID1\PAK0.PAK"
     !insertmacro InstallSection qsw106.zip
     FileClose $INSTLOG
@@ -159,12 +167,14 @@ Section !$(NQUAKE) NQUAKE
   Rename "$INSTDIR\ID1" "$INSTDIR\id1"
   Rename "$INSTDIR\id1\PAK0.PAK" "$INSTDIR\id1\pak0.pak"
   FileWrite $INSTLOG "id1\pak0.pak$\r$\n"
-  # Copy pak1.pak if it was found or specified
+
+  # Copy pak1.pak if it was found or specified (registered data)
   ${If} $PAK_LOCATION != ""
     CopyFiles $PAK_LOCATION "$INSTDIR\id1\pak1.pak"
     FileWrite $INSTLOG "id1\pak1.pak$\r$\n"
   ${EndIf}
-  # Remove crap files from Quake directory
+
+  # Remove crap files extracted from shareware zip
   Delete "$INSTDIR\CWSDPMI.EXE"
   Delete "$INSTDIR\QLAUNCH.EXE"
   Delete "$INSTDIR\QUAKE.EXE"
@@ -182,42 +192,19 @@ Section !$(NQUAKE) NQUAKE
   Delete "$INSTDIR\SLICNSE.TXT"
   Delete "$INSTDIR\TECHINFO.TXT"
   Delete "$INSTDIR\MGENVXD.VXD"
-  ${locate::RMDirEmpty} "$INSTDIR" /M=*.* $0
+  #${locate::RMDirEmpty} "$INSTDIR" /M=*.* $0
 
-  # Install nQuake base package
+  # Backup old config if such exists
+  ${If} ${FileExists} "$INSTDIR\ezquake\configs\config.cfg"
+    Rename "$INSTDIR\ezquake\configs\config.cfg" "$INSTDIR\ezquake\configs\config.bak"
+  ${EndIf}
+
+  # Download and install nQuake
   !insertmacro InstallSection nquake.zip
   !insertmacro InstallSection ezquake.zip
-
-SectionEnd
-
-Section !$(EYECANDY) EYECANDY
-
-  SectionIn 1 2
-
   !insertmacro InstallSection eyecandy.zip
-
-SectionEnd
-
-Section !$(FROGBOT) FROGBOT
-
-  SectionIn 1 2
-
   !insertmacro InstallSection frogbot.zip
-
-SectionEnd
-
-Section $(MAPS) MAPS
-
-  SectionIn 2
-
   !insertmacro InstallSection maps.zip
-
-SectionEnd
-
-Section $(DEMOS) DEMOS
-
-  SectionIn 2
-
   !insertmacro InstallSection demos.zip
 
 SectionEnd
@@ -227,9 +214,7 @@ Section "" # StartMenu
   StrCpy $0 $STARTMENU_FOLDER 1
 
   ${Unless} $0 == ">"
-
     Call .createStartMenuItems
-
   ${EndUnless}
 
 SectionEnd
@@ -241,17 +226,17 @@ Section "" # Clean up installation
   Call .cleanupInstallation
 
   # Registry
-  WriteRegStr HKLM "Software\$(^Name)" "Install_Dir" $INSTDIR
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\$(^Name)" "DisplayName" "$(^Name)"
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\$(^Name)" "DisplayVersion" "${VERSION}"
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\$(^Name)" "DisplayIcon" "$INSTDIR\uninstall.exe"
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\$(^Name)" "UninstallString" "$INSTDIR\uninstall.exe"
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\$(^Name)" "Publisher" "The nQuake Team"
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\$(^Name)" "URLUpdateInfo" "http://sourceforge.net/project/showfiles.php?group_id=197706"
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\$(^Name)" "URLInfoAbout" "http://nquake.sourceforge.net/"
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\$(^Name)" "HelpLink" "http://sourceforge.net/forum/forum.php?forum_id=702198"
-  WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\$(^Name)" "NoModify" "1"
-  WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\$(^Name)" "NoRepair" "1"
+  WriteRegStr HKLM "Software\nQuake" "Install_Dir" $INSTDIR
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\nQuake" "DisplayName" "nQuake"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\nQuake" "DisplayVersion" "${VERSION}"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\nQuake" "DisplayIcon" "$INSTDIR\uninstall.exe"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\nQuake" "UninstallString" "$INSTDIR\uninstall.exe"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\nQuake" "Publisher" "The nQuake Team"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\nQuake" "URLUpdateInfo" "http://sourceforge.net/project/showfiles.php?group_id=197706"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\nQuake" "URLInfoAbout" "http://nquake.sourceforge.net/"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\nQuake" "HelpLink" "http://sourceforge.net/forum/forum.php?forum_id=702198"
+  WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\nQuake" "NoModify" "1"
+  WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\nQuake" "NoRepair" "1"
 
   WriteUninstaller "uninstall.exe"
 
@@ -262,13 +247,16 @@ SectionEnd
 
 Section "Uninstall"
 
+  !insertmacro MUI_INSTALLOPTIONS_READ $REMOVE_ALL_FILES "removefolder.ini" "Field 2" "State"
+
   SetOutPath $TEMP
 
   # Set uninstallation progress bar to 0%
   RealProgress::SetProgress /NOUNLOAD 0
 
-  # If install.log exists, remove all files listed
+  # If install.log exists and user didn't check "remove all files", remove all files listed in install.log
   ${If} ${FileExists} "$INSTDIR\${INSTLOG}"
+  ${AndIf} $REMOVE_ALL_FILES != 1
     # Get line count for install.log
     Push "$INSTDIR\${INSTLOG}"
     Call un.LineCount
@@ -303,15 +291,18 @@ Section "Uninstall"
     DetailPrint $(REMOVED_EMPTY_DIRECTORIES)
     RMDir /REBOOTOK $INSTDIR
   ${Else}
-    MessageBox MB_YESNO|MB_ICONEXCLAMATION $(UNINSTALL_CONFIRMATION) IDNO SkipUninstall
+    ${If} $REMOVE_ALL_FILES != 1
+      MessageBox MB_YESNO|MB_ICONEXCLAMATION $(UNINSTALL_CONFIRMATION) IDNO SkipUninstall
+    ${EndIf}
     RMDir /r /REBOOTOK $INSTDIR
+    RealProgress::SetProgress /NOUNLOAD 100
   ${EndIf}
 
-  ReadRegStr $0 HKLM "Software\$(^Name)" "StartMenu_Folder"
+  ReadRegStr $0 HKLM "Software\nQuake" "StartMenu_Folder"
   RMDir /r /REBOOTOK "$SMPROGRAMS\$0"
 
-  DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\$(^Name)"
-  DeleteRegKey HKLM "Software\$(^Name)"
+  DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\nQuake"
+  DeleteRegKey HKLM "Software\nQuake"
 
   Goto FinishUninstall
 
@@ -321,17 +312,6 @@ Section "Uninstall"
   FinishUninstall:
 
 SectionEnd
-
-;----------------------------------------------------
-;Descriptions
-
-!insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
-  !insertmacro MUI_DESCRIPTION_TEXT ${NQUAKE} $(DESC_NQUAKE)
-  !insertmacro MUI_DESCRIPTION_TEXT ${FROGBOT} $(DESC_FROGBOT)
-  !insertmacro MUI_DESCRIPTION_TEXT ${EYECANDY} $(DESC_EYECANDY)
-  !insertmacro MUI_DESCRIPTION_TEXT ${MAPS} $(DESC_MAPS)
-  !insertmacro MUI_DESCRIPTION_TEXT ${DEMOS} $(DESC_DEMOS)
-!insertmacro MUI_FUNCTION_DESCRIPTION_END
 
 ;----------------------------------------------------
 ;Functions
@@ -395,45 +375,140 @@ Function .onInit
 
   # Determine sizes on all the sections
   !insertmacro DetermineSectionSize qsw106.zip
-  StrCpy $6 $SIZE
+  StrCpy $R0 $SIZE
   !insertmacro DetermineSectionSize nquake.zip
-  StrCpy $7 $SIZE
-  IntOp $8 $6 + $7
+  StrCpy $R1 $SIZE
   !insertmacro DetermineSectionSize ezquake.zip
-  StrCpy $6 $SIZE
-  IntOp $9 $8 + $6
-  SectionSetSize ${NQUAKE} $9
-
+  StrCpy $R2 $SIZE
   !insertmacro DetermineSectionSize eyecandy.zip
-  SectionSetSize ${EYECANDY} $SIZE
-
+  StrCpy $R3 $SIZE
   !insertmacro DetermineSectionSize frogbot.zip
-  SectionSetSize ${FROGBOT} $SIZE
-
+  StrCpy $R4 $SIZE
   !insertmacro DetermineSectionSize maps.zip
-  SectionSetSize ${MAPS} $SIZE
-
+  StrCpy $R5 $SIZE
   !insertmacro DetermineSectionSize demos.zip
-  SectionSetSize ${DEMOS} $SIZE
-
-  #!insertmacro MUI_LANGDLL_DISPLAY
+  StrCpy $R6 $SIZE
+  IntOp $0 $R0 + $R1
+  IntOp $0 $0 + $R2
+  IntOp $0 $0 + $R3
+  IntOp $0 $0 + $R4
+  IntOp $0 $0 + $R5
+  IntOp $0 $0 + $R6
+  SectionSetSize ${NQUAKE} $0
 
 FunctionEnd
 
-Function un.onInit
+Function FULLVERSION
 
-  #!insertmacro MUI_LANGDLL_DISPLAY
+  !insertmacro MUI_INSTALLOPTIONS_EXTRACT "fullversion.ini"
+  !insertmacro MUI_HEADER_TEXT "Full Version Quake Data" "Find pak1.pak for inclusion in nQuake."
+
+  ${If} ${FileExists} "C:\Quake\id1\pak1.pak"
+    StrCpy $0 "C:\Quake\id1"
+    Goto FullVersionEnd
+  ${OrIf} ${FileExists} "D:\Quake\id1\pak1.pak"
+    StrCpy $0 "D:\Quake\id1"
+    Goto FullVersionEnd
+  ${OrIf} ${FileExists} "E:\Quake\id1\pak1.pak"
+    StrCpy $0 "E:\Quake\id1"
+    Goto FullVersionEnd
+  ${OrIf} ${FileExists} "C:\Games\Quake\id1\pak1.pak"
+    StrCpy $0 "C:\Games\Quake\id1"
+    Goto FullVersionEnd
+  ${OrIf} ${FileExists} "D:\Games\Quake\id1\pak1.pak"
+    StrCpy $0 "D:\Games\Quake\id1"
+    Goto FullVersionEnd
+  ${OrIf} ${FileExists} "E:\Games\Quake\id1\pak1.pak"
+    StrCpy $0 "E:\Games\Quake\id1"
+    Goto FullVersionEnd
+  ${OrIf} ${FileExists} "C:\Program Files\Quake\id1\pak1.pak"
+    StrCpy $0 "C:\Program Files\Quake\id1"
+    Goto FullVersionEnd
+  ${OrIf} ${FileExists} "C:\eQuake\id1\pak1.pak"
+    StrCpy $0 "C:\eQuake\id1"
+    Goto FullVersionEnd
+  ${OrIf} ${FileExists} "D:\eQuake\id1\pak1.pak"
+    StrCpy $0 "D:\eQuake\id1"
+    Goto FullVersionEnd
+  ${OrIf} ${FileExists} "E:\eQuake\id1\pak1.pak"
+    StrCpy $0 "E:\eQuake\id1"
+    Goto FullVersionEnd
+  ${OrIf} ${FileExists} "C:\Games\eQuake\id1\pak1.pak"
+    StrCpy $0 "C:\Games\eQuake\id1"
+    Goto FullVersionEnd
+  ${OrIf} ${FileExists} "D:\Games\eQuake\id1\pak1.pak"
+    StrCpy $0 "D:\Games\eQuake\id1"
+    Goto FullVersionEnd
+  ${OrIf} ${FileExists} "E:\Games\eQuake\id1\pak1.pak"
+    StrCpy $0 "E:\Games\eQuake\id1"
+    Goto FullVersionEnd
+  ${OrIf} ${FileExists} "C:\Program Files\eQuake\id1\pak1.pak"
+    StrCpy $0 "C:\Program Files\eQuake\id1"
+    Goto FullVersionEnd
+  ${OrIf} ${FileExists} "C:\fQuake\id1\pak1.pak"
+    StrCpy $0 "C:\fQuake\id1"
+    Goto FullVersionEnd
+  ${OrIf} ${FileExists} "D:\fQuake\id1\pak1.pak"
+    StrCpy $0 "D:\fQuake\id1"
+    Goto FullVersionEnd
+  ${OrIf} ${FileExists} "E:\fQuake\id1\pak1.pak"
+    StrCpy $0 "E:\fQuake\id1"
+    Goto FullVersionEnd
+  ${OrIf} ${FileExists} "C:\Games\fQuake\id1\pak1.pak"
+    StrCpy $0 "C:\Games\fQuake\id1"
+    Goto FullVersionEnd
+  ${OrIf} ${FileExists} "D:\Games\fQuake\id1\pak1.pak"
+    StrCpy $0 "D:\Games\fQuake\id1"
+    Goto FullVersionEnd
+  ${OrIf} ${FileExists} "E:\Games\fQuake\id1\pak1.pak"
+    StrCpy $0 "E:\Games\fQuake\id1"
+    Goto FullVersionEnd
+  ${OrIf} ${FileExists} "C:\Program Files\fQuake\id1\pak1.pak"
+    StrCpy $0 "C:\Program Files\fQuake\id1"
+    Goto FullVersionEnd
+  ${OrIf} ${FileExists} "C:\nQuake\id1\pak1.pak"
+    StrCpy $0 "C:\nQuake\id1"
+    Goto FullVersionEnd
+  ${OrIf} ${FileExists} "D:\nQuake\id1\pak1.pak"
+    StrCpy $0 "D:\nQuake\id1"
+    Goto FullVersionEnd
+  ${OrIf} ${FileExists} "E:\nQuake\id1\pak1.pak"
+    StrCpy $0 "E:\nQuake\id1"
+    Goto FullVersionEnd
+  ${OrIf} ${FileExists} "C:\Games\nQuake\id1\pak1.pak"
+    StrCpy $0 "C:\Games\nQuake\id1"
+    Goto FullVersionEnd
+  ${OrIf} ${FileExists} "D:\Games\nQuake\id1\pak1.pak"
+    StrCpy $0 "D:\Games\nQuake\id1"
+    Goto FullVersionEnd
+  ${OrIf} ${FileExists} "E:\Games\nQuake\id1\pak1.pak"
+    StrCpy $0 "E:\Games\nQuake\id1"
+    Goto FullVersionEnd
+  ${OrIf} ${FileExists} "C:\Program Files\nQuake\id1\pak1.pak"
+    StrCpy $0 "C:\Program Files\nQuake\id1"
+    Goto FullVersionEnd
+  ${EndIf}
+  FullVersionEnd:
+  !insertmacro MUI_INSTALLOPTIONS_WRITE "fullversion.ini" "Field 3" "State" "$0\pak1.pak"
+  !insertmacro MUI_INSTALLOPTIONS_DISPLAY "fullversion.ini"
 
 FunctionEnd
 
-Function PREFERENCESPAGE
+Function DISTFILEFOLDER
 
-  # Create the Preferences page
-  !insertmacro MUI_INSTALLOPTIONS_EXTRACT "iopreferences.ini"
+  !insertmacro MUI_INSTALLOPTIONS_EXTRACT "distfilefolder.ini"
+  !insertmacro MUI_HEADER_TEXT "Distribution Files" "Select where you want the distribution files to be downloaded."
+  !insertmacro MUI_INSTALLOPTIONS_WRITE "distfilefolder.ini" "Field 5" "State" ${DISTFILES_PATH}
+  !insertmacro MUI_INSTALLOPTIONS_DISPLAY "distfilefolder.ini"
 
+FunctionEnd
+
+Function MIRRORSELECT
+
+  !insertmacro MUI_INSTALLOPTIONS_EXTRACT "mirrorselect.ini"
+  !insertmacro MUI_HEADER_TEXT "Mirror Selection" "Select a mirror from your part of the world."
   ReadINIStr $0 $MIRRORS_INI "description" 1
-  !insertmacro MUI_INSTALLOPTIONS_WRITE "iopreferences.ini" "Field 3" "State" $(PREFERENCESPAGE_RANDOM_MIRROR)
-  !insertmacro MUI_INSTALLOPTIONS_WRITE "iopreferences.ini" "Field 5" "State" ${DISTFILES_PATH}
+  !insertmacro MUI_INSTALLOPTIONS_WRITE "mirrorselect.ini" "Field 3" "State" $(PREFERENCESPAGE_RANDOM_MIRROR)
 
   # Fix the mirrors for the Preferences page
   StrCpy $0 1
@@ -452,91 +527,24 @@ Function PREFERENCESPAGE
     StrCpy $2 $2 "" 1
   ${EndIf}
 
-  !insertmacro MUI_INSTALLOPTIONS_WRITE "iopreferences.ini" "Field 3" "ListItems" $2
+  !insertmacro MUI_INSTALLOPTIONS_WRITE "mirrorselect.ini" "Field 3" "ListItems" $2
+  !insertmacro MUI_INSTALLOPTIONS_DISPLAY "mirrorselect.ini"
 
-  # Translate the Preferences page
-  !insertmacro MUI_INSTALLOPTIONS_WRITE "iopreferences.ini" "Field 1" "Text" $(PREFERENCESPAGE_PREFERENCES_TITLE)
-  !insertmacro MUI_INSTALLOPTIONS_WRITE "iopreferences.ini" "Field 2" "Text" $(PREFERENCESPAGE_MIRROR_TEXT)
-  !insertmacro MUI_INSTALLOPTIONS_WRITE "iopreferences.ini" "Field 4" "Text" $(PREFERENCESPAGE_DOWNLOAD_TEXT)
-  !insertmacro MUI_INSTALLOPTIONS_WRITE "iopreferences.ini" "Field 6" "Text" $(PREFERENCESPAGE_UPDATE_DISTFILES)
-  !insertmacro MUI_INSTALLOPTIONS_WRITE "iopreferences.ini" "Field 7" "Text" $(PREFERENCESPAGE_REGISTERED_TITLE)
-  !insertmacro MUI_INSTALLOPTIONS_WRITE "iopreferences.ini" "Field 8" "Text" $(PREFERENCESPAGE_FIND_PAK1)
-  !insertmacro MUI_INSTALLOPTIONS_WRITE "iopreferences.ini" "Field 10" "Text" $(PREFERENCESPAGE_LOST_CD)
-  !insertmacro MUI_HEADER_TEXT $(PREFERENCESPAGE_HEADER) $(PREFERENCESPAGE_SUBHEADER)
+FunctionEnd
 
-  ${If} ${FileExists} "C:\Quake\id1\pak1.pak"
-    StrCpy $0 "C:\Quake\id1"
-    Goto DataFound
-  ${OrIf} ${FileExists} "D:\Quake\id1\pak1.pak"
-    StrCpy $0 "D:\Quake\id1"
-    Goto DataFound
-  ${OrIf} ${FileExists} "E:\Quake\id1\pak1.pak"
-    StrCpy $0 "E:\Quake\id1"
-    Goto DataFound
-  ${OrIf} ${FileExists} "C:\Games\Quake\id1\pak1.pak"
-    StrCpy $0 "C:\Games\Quake\id1"
-    Goto DataFound
-  ${OrIf} ${FileExists} "D:\Games\Quake\id1\pak1.pak"
-    StrCpy $0 "D:\Games\Quake\id1"
-    Goto DataFound
-  ${OrIf} ${FileExists} "E:\Games\Quake\id1\pak1.pak"
-    StrCpy $0 "E:\Games\Quake\id1"
-    Goto DataFound
-  ${OrIf} ${FileExists} "C:\Program Files\Quake\id1\pak1.pak"
-    StrCpy $0 "C:\Program Files\Quake\id1"
-    Goto DataFound
-  ${OrIf} ${FileExists} "C:\eQuake\id1\pak1.pak"
-    StrCpy $0 "C:\eQuake\id1"
-    Goto DataFound
-  ${OrIf} ${FileExists} "D:\eQuake\id1\pak1.pak"
-    StrCpy $0 "D:\eQuake\id1"
-    Goto DataFound
-  ${OrIf} ${FileExists} "E:\eQuake\id1\pak1.pak"
-    StrCpy $0 "E:\eQuake\id1"
-    Goto DataFound
-  ${OrIf} ${FileExists} "C:\Games\eQuake\id1\pak1.pak"
-    StrCpy $0 "C:\Games\eQuake\id1"
-    Goto DataFound
-  ${OrIf} ${FileExists} "D:\Games\eQuake\id1\pak1.pak"
-    StrCpy $0 "D:\Games\eQuake\id1"
-    Goto DataFound
-  ${OrIf} ${FileExists} "E:\Games\eQuake\id1\pak1.pak"
-    StrCpy $0 "E:\Games\eQuake\id1"
-    Goto DataFound
-  ${OrIf} ${FileExists} "C:\Program Files\eQuake\id1\pak1.pak"
-    StrCpy $0 "C:\Program Files\eQuake\id1"
-    Goto DataFound
-  ${OrIf} ${FileExists} "C:\fQuake\id1\pak1.pak"
-    StrCpy $0 "C:\fQuake\id1"
-    Goto DataFound
-  ${OrIf} ${FileExists} "D:\fQuake\id1\pak1.pak"
-    StrCpy $0 "D:\fQuake\id1"
-    Goto DataFound
-  ${OrIf} ${FileExists} "E:\fQuake\id1\pak1.pak"
-    StrCpy $0 "E:\fQuake\id1"
-    Goto DataFound
-  ${OrIf} ${FileExists} "C:\Games\fQuake\id1\pak1.pak"
-    StrCpy $0 "C:\Games\fQuake\id1"
-    Goto DataFound
-  ${OrIf} ${FileExists} "D:\Games\fQuake\id1\pak1.pak"
-    StrCpy $0 "D:\Games\fQuake\id1"
-    Goto DataFound
-  ${OrIf} ${FileExists} "E:\Games\fQuake\id1\pak1.pak"
-    StrCpy $0 "E:\Games\fQuake\id1"
-    Goto DataFound
-  ${OrIf} ${FileExists} "C:\Program Files\fQuake\id1\pak1.pak"
-    StrCpy $0 "C:\Program Files\fQuake\id1"
-    Goto DataFound
-  ${EndIf}
-  Goto DataFoundEnd
-  DataFound:
-    !insertmacro MUI_INSTALLOPTIONS_WRITE "iopreferences.ini" "Field 8" "Text" $(PREFERENCESPAGE_REGISTERED_DATA_FOUND)
-    !insertmacro MUI_INSTALLOPTIONS_WRITE "iopreferences.ini" "Field 9" "Type" ""
-    !insertmacro MUI_INSTALLOPTIONS_WRITE "iopreferences.ini" "Field 9" "State" "$0\pak1.pak"
-    !insertmacro MUI_INSTALLOPTIONS_WRITE "iopreferences.ini" "Field 10" "Type" ""
-  DataFoundEnd:
+Function KEEPDISTFILES
 
-  !insertmacro MUI_INSTALLOPTIONS_DISPLAY "iopreferences.ini"
+  !insertmacro MUI_INSTALLOPTIONS_EXTRACT "keepdistfiles.ini"
+  !insertmacro MUI_HEADER_TEXT "Distribution Files" "Choose if you want the distribution files removed or not."
+  !insertmacro MUI_INSTALLOPTIONS_DISPLAY "keepdistfiles.ini"
+
+FunctionEnd
+
+Function un.REMOVEFOLDER
+
+  !insertmacro MUI_INSTALLOPTIONS_EXTRACT "removefolder.ini"
+  !insertmacro MUI_HEADER_TEXT "Remove Everything" "Choose if you want the entire nQuake folder removed."
+  !insertmacro MUI_INSTALLOPTIONS_DISPLAY "removefolder.ini"
 
 FunctionEnd
 
@@ -595,88 +603,69 @@ Function .abortInstallation
 
   FileClose $DISTLOG
 
-  # Write distfiles.log
-  FileOpen $DISTLOG "$DISTFILES_PATH\${DISTLOG}" w
-    FileOpen $R0 $DISTLOGTMP r
-    ClearErrors
-    ${DoUntil} ${Errors}
-      FileRead $R0 $0
-      FileWrite $DISTLOG $0
-    ${LoopUntil} ${Errors}
-    FileClose $R0
-  FileClose $DISTLOG
-
-  # If install.log exists, ask to remove installed files
-  ${If} ${FileExists} "$INSTDIR\${INSTLOG}"
-    Messagebox MB_YESNO|MB_ICONEXCLAMATION $(ABORT_REMOVE_INSTFILES) IDNO SkipInstRemoval
-    # Get line count for install.log
-    Push "$INSTDIR\${INSTLOG}"
-    Call .LineCount
-    Pop $R1 # Line count
-    IntOp $R1 $R1 - 1 # Remove the timestamp from the line count
-    FileOpen $R0 "$INSTDIR\${INSTLOG}" r
-    # Get installation time from install.log
+  # Ask to remove installed files
+  Messagebox MB_YESNO|MB_ICONEXCLAMATION $(ABORT_REMOVE_INSTFILES) IDNO SkipInstRemoval
+  # Get line count for install.log
+  Push "$INSTDIR\${INSTLOG}"
+  Call .LineCount
+  Pop $R1 # Line count
+  IntOp $R1 $R1 - 1 # Remove the timestamp from the line count
+  FileOpen $R0 "$INSTDIR\${INSTLOG}" r
+  # Get installation time from install.log
+  FileRead $R0 $0
+  StrCpy $1 $0 -2 14
+  StrCpy $5 1 # Current line
+  StrCpy $6 0 # Current % Progress
+  ${DoUntil} ${Errors}
     FileRead $R0 $0
-    StrCpy $1 $0 -2 14
-    StrCpy $5 1 # Current line
-    StrCpy $6 0 # Current % Progress
-    ${DoUntil} ${Errors}
-      FileRead $R0 $0
-      StrCpy $0 $0 -2
-      ${If} ${FileExists} "$INSTDIR\$0"
-        ${time::GetFileTime} "$INSTDIR\$0" $2 $3 $4
-        ${time::MathTime} "second($1) - second($3) =" $2
-        ${If} $2 >= 0
-          Delete /REBOOTOK "$INSTDIR\$0"
-        ${EndIf}
+    StrCpy $0 $0 -2
+    ${If} ${FileExists} "$INSTDIR\$0"
+      ${time::GetFileTime} "$INSTDIR\$0" $2 $3 $4
+      ${time::MathTime} "second($1) - second($3) =" $2
+      ${If} $2 >= 0
+        Delete /REBOOTOK "$INSTDIR\$0"
       ${EndIf}
-      # Set progress bar
-      IntOp $7 $5 * 100
-      IntOp $7 $7 / $R1
-      RealProgress::SetProgress /NOUNLOAD $7
-      IntOp $5 $5 + 1
-    ${LoopUntil} ${Errors}
-    FileClose $R0
-    Delete /REBOOTOK "$INSTDIR\${INSTLOG}"
-    ${locate::RMDirEmpty} $INSTDIR /M=*.* $0
-    DetailPrint $(REMOVED_EMPTY_DIRECTORIES)
-    RMDir /REBOOTOK $INSTDIR
-    Goto InstEnd
-    SkipInstRemoval:
-    Delete /REBOOTOK "$INSTDIR\${INSTLOG}"
-    InstEnd:
-  ${EndIf}
+    ${EndIf}
+    # Set progress bar
+    IntOp $7 $5 * 100
+    IntOp $7 $7 / $R1
+    RealProgress::SetProgress /NOUNLOAD $7
+    IntOp $5 $5 + 1
+  ${LoopUntil} ${Errors}
+  FileClose $R0
+  Delete /REBOOTOK "$INSTDIR\${INSTLOG}"
+  ${locate::RMDirEmpty} $INSTDIR /M=*.* $0
+  DetailPrint $(REMOVED_EMPTY_DIRECTORIES)
+  RMDir /REBOOTOK $INSTDIR
+  Goto InstEnd
+  SkipInstRemoval:
+  Delete /REBOOTOK "$INSTDIR\${INSTLOG}"
+  InstEnd:
 
-  # If distfiles.log exists, ask to remove downloaded distfiles
-  ${If} ${FileExists} "$DISTFILES_PATH\${DISTLOG}"
-    Messagebox MB_YESNO|MB_ICONEXCLAMATION $(ABORT_KEEP_DISTFILES) IDYES SkipDistRemoval
-    # Get line count for distfiles.log
-    Push "$DISTFILES_PATH\${DISTLOG}"
-    Call .LineCount
-    Pop $R1 # Line count
-    FileOpen $R0 "$DISTFILES_PATH\${DISTLOG}" r
-    StrCpy $5 0 # Current line
-    StrCpy $6 0 # Current % Progress
-    ${DoUntil} ${Errors}
-      FileRead $R0 $0
-      StrCpy $0 $0 -2
-      ${If} ${FileExists} "$DISTFILES_PATH\$0"
-        Delete /REBOOTOK "$DISTFILES_PATH\$0"
-      ${EndIf}
-      # Set progress bar
-      IntOp $7 $5 * 100
-      IntOp $7 $7 / $R1
-      RealProgress::SetProgress /NOUNLOAD $7
-      IntOp $5 $5 + 1
-    ${LoopUntil} ${Errors}
-    FileClose $R0
-    Delete /REBOOTOK "$DISTFILES_PATH\${DISTLOG}"
-    RMDir /REBOOTOK $DISTFILES_PATH
-    Goto DistEnd
-    SkipDistRemoval:
-    Delete /REBOOTOK "$DISTFILES_PATH\${DISTLOG}"
-    DistEnd:
-  ${EndIf}
+  # Ask to remove downloaded distfiles
+  Messagebox MB_YESNO|MB_ICONEXCLAMATION $(ABORT_KEEP_DISTFILES) IDYES DistEnd
+  # Get line count for distfiles.log
+  Push $DISTLOGTMP
+  Call .LineCount
+  Pop $R1 # Line count
+  FileOpen $R0 $DISTLOGTMP r
+  StrCpy $5 0 # Current line
+  StrCpy $6 0 # Current % Progress
+  ${DoUntil} ${Errors}
+    FileRead $R0 $0
+    StrCpy $0 $0 -2
+    ${If} ${FileExists} "$DISTFILES_PATH\$0"
+      Delete /REBOOTOK "$DISTFILES_PATH\$0"
+    ${EndIf}
+    # Set progress bar
+    IntOp $7 $5 * 100
+    IntOp $7 $7 / $R1
+    RealProgress::SetProgress /NOUNLOAD $7
+    IntOp $5 $5 + 1
+  ${LoopUntil} ${Errors}
+  FileClose $R0
+  RMDir /REBOOTOK $DISTFILES_PATH
+  DistEnd:
 
   RealProgress::SetProgress /NOUNLOAD 100
 
@@ -787,7 +776,7 @@ Function .installSection
 FunctionEnd
 
 Function .determineMirror
-  !insertmacro MUI_INSTALLOPTIONS_READ $R0 "iopreferences.ini" "Field 3" "State"
+  !insertmacro MUI_INSTALLOPTIONS_READ $R0 "mirrorselect.ini" "Field 3" "State"
   ${If} $R0 == "Randomly selected mirror (Recommended)"
     # Get amount of mirrors ($0 = amount of mirrors)
     StrCpy $0 1
@@ -845,7 +834,7 @@ Function .createStartMenuItems
     CreateShortCut "$SMPROGRAMS\$STARTMENU_FOLDER\$(SHORT_EZQUAKE).lnk" "$INSTDIR\ezquake-gl.exe" "" "$INSTDIR\ezquake-gl.exe" 0
     CreateShortCut "$SMPROGRAMS\$STARTMENU_FOLDER\$(SHORT_UNINSTALL).lnk" "$INSTDIR\uninstall.exe" "" "$INSTDIR\uninstall.exe" 0
 
-    WriteRegStr HKLM "Software\$(^Name)" "StartMenu_Folder" $STARTMENU_FOLDER
+    WriteRegStr HKLM "Software\nQuake" "StartMenu_Folder" $STARTMENU_FOLDER
 FunctionEnd
 
 Function .cleanupInstallation
@@ -864,51 +853,28 @@ Function .cleanupInstallation
 
   FileClose $DISTLOG
 
-  # Write distfiles.log
-  FileOpen $DISTLOG "$DISTFILES_PATH\${DISTLOG}" w
-    FileOpen $R0 $DISTLOGTMP r
-    ClearErrors
-    ${DoUntil} ${Errors}
-      FileRead $R0 $0
-      FileWrite $DISTLOG $0
-    ${LoopUntil} ${Errors}
-    FileClose $R0
-    # Copy the downloaded distfiledates.ini to the distfiles directory
-    # IF the installer was set to update old distfiles
-    ${If} $DISTFILES_UPDATE == 1
-      CopyFiles $DISTFILEDATES_INI "$DISTFILES_PATH\${DISTFILEDATES_INI}"
-      FileWrite $DISTLOG "${DISTFILEDATES_INI}$\r$\n"
-    ${EndIf}
-  FileClose $DISTLOG
-
-  # If distfiles.log exists, ask to remove downloaded distfiles
-  ${If} ${FileExists} "$DISTFILES_PATH\${DISTLOG}"
-    Messagebox MB_YESNO|MB_ICONEXCLAMATION $(KEEP_DISTFILES) IDYES SkipRemoval
-    # Get line count for distfiles.log
-    Push "$DISTFILES_PATH\${DISTLOG}"
-    Call .LineCount
-    Pop $R1 # Line count
-    FileOpen $R0 "$DISTFILES_PATH\${DISTLOG}" r
-    StrCpy $5 0 # Current line
-    StrCpy $6 0 # Current % Progress
-    ${DoUntil} ${Errors}
-      FileRead $R0 $0
-      StrCpy $0 $0 -2
-      ${If} ${FileExists} "$DISTFILES_PATH\$0"
-        Delete /REBOOTOK "$DISTFILES_PATH\$0"
-      ${EndIf}
-      # Set progress bar
-      IntOp $7 $5 * 100
-      IntOp $7 $7 / $R1
-      RealProgress::SetProgress /NOUNLOAD $7
-      IntOp $5 $5 + 1
-    ${LoopUntil} ${Errors}
-    FileClose $R0
-    Delete /REBOOTOK "$DISTFILES_PATH\${DISTLOG}"
-    RMDir /REBOOTOK $DISTFILES_PATH
+  # Ask to remove downloaded distfiles
+  ${If} $DISTFILES_KEEP == 1
     Goto DistEnd
-    SkipRemoval:
-    Delete /REBOOTOK "$DISTFILES_PATH\${DISTLOG}"
-    DistEnd:
   ${EndIf}
+  # Get line count for distfiles.log
+  Push $DISTLOGTMP
+  Call .LineCount
+  Pop $R1 # Line count
+  FileOpen $R0 $DISTLOGTMP r
+  StrCpy $5 0 # Current line
+  StrCpy $6 0 # Current % Progress
+  ${DoUntil} ${Errors}
+    FileRead $R0 $0
+    StrCpy $0 $0 -2
+    ${If} ${FileExists} "$DISTFILES_PATH\$0"
+      Delete /REBOOTOK "$DISTFILES_PATH\$0"
+    ${EndIf}
+    IntOp $5 $5 + 1
+  ${LoopUntil} ${Errors}
+  FileClose $R0
+  ${Unless} ${FileExists} "$DISTFILES_PATH\*.*"
+    RMDir /REBOOTOK $DISTFILES_PATH
+  ${EndUnless}
+  DistEnd:
 FunctionEnd
