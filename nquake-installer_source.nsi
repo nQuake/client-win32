@@ -1,8 +1,8 @@
 ;nQuake NSIS Online Installer Script
-;By Empezar 2007-05-31; Last modified 2007-10-20
+;By Empezar 2007-05-31; Last modified 2008-02-18
 
-!define VERSION "1.8"
-!define SHORTVERSION "18"
+!define VERSION "1.8a"
+!define SHORTVERSION "18a"
 
 Name "nQuake"
 OutFile "nquake${SHORTVERSION}_installer.exe"
@@ -179,8 +179,6 @@ Section "" # Prepare installation
   IntOp $INSTSIZE $INSTSIZE + $0
   ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "ezquake.zip"
   IntOp $INSTSIZE $INSTSIZE + $0
-  ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "ezquake-security.zip"
-  IntOp $INSTSIZE $INSTSIZE + $0
   ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "frogbot.zip"
   IntOp $INSTSIZE $INSTSIZE + $0
   ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "eyecandy.zip"
@@ -323,16 +321,6 @@ Section "nQuake" NQUAKE
   !insertmacro InstallSection ezquake.zip "ezQuake"
   # Add to installed size
   ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "ezquake.zip"
-  IntOp $INSTALLED $INSTALLED + $0
-  # Set progress bar
-  IntOp $0 $INSTALLED * 100
-  IntOp $0 $0 / $INSTSIZE
-  RealProgress::SetProgress /NOUNLOAD $0
-
-  # Download and install ezQuake security module
-  !insertmacro InstallSection ezquake-security.zip "ezQuake security module"
-  # Add to installed size
-  ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "ezquake-security.zip"
   IntOp $INSTALLED $INSTALLED + $0
   # Set progress bar
   IntOp $0 $INSTALLED * 100
