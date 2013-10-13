@@ -1,8 +1,8 @@
 ;nQuake NSIS Online Installer Script
-;By Empezar 2007-05-31; Last modified 2007-08-06
+;By Empezar 2007-05-31; Last modified 2007-08-08
 
-!define VERSION "1.7b"
-!define SHORTVERSION "17b"
+!define VERSION "1.7c"
+!define SHORTVERSION "17c"
 
 Name "nQuake"
 OutFile "nquake${SHORTVERSION}_installer.exe"
@@ -721,7 +721,7 @@ Function FULLVERSION
   !insertmacro MUI_INSTALLOPTIONS_WRITE "fullversion.ini" "Field 1" "Text" "The full version of Quake is not included in this package. However, setup has found what resembles the full version pak1.pak on your harddrive. If this is not the correct file, click Browse to locate the correct pak1.pak. Click Next to continue."
   !insertmacro MUI_INSTALLOPTIONS_WRITE "fullversion.ini" "Field 3" "State" "$0\pak1.pak"
   FullVersionEnd:
-  # Remove the google link if the installer is in offline mode
+  # Remove the purchase link if the installer is in offline mode
   ${If} $OFFLINE == 1
     !insertmacro MUI_INSTALLOPTIONS_WRITE "fullversion.ini" "Field 4" "Type" ""
   ${EndIf}
