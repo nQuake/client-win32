@@ -1,0 +1,178 @@
+2008-??-?? - nQuake v1.9
+
+* nQuake now copies pak0.pak if found in the same directory as pak1.pak instead of downloading shareware Quake.
+* "Keep/delete distribution files" option moved to distribution file folder selection page.
+* Added a warning message when users choose to remove all files contained within the nQuake folder.
+* Split the eyecandy and nquake packages into smaller packages.
+
+2008-??-?? - nQuake CD-ROM Generator v1.1
+
+* Added a warning message when users choose to remove all files contained within the nQuake folder.
+* Changed the text "Installing file: <filename> (<filesize> kB)" to "Installed file: <filename>".
+* Split the eyecandy and nquake packages into smaller packages.
+
+2008-??-?? - nQuake v1.3 for Mac OS X
+
+* Split the eyecandy and nquake packages into smaller packages.
+* Future compatibility.
+
+2008-??-?? - nQuake v1.3 for Linux
+
+* Split the eyecandy and nquake packages into smaller packages.
+* Future compatibility.
+
+2008-05-16 - nQuake v1.2a for Mac OS X
+
+* Renamed README to INSTALL for clarity.
+* Fixed the bug where tr would chop off large parts of some files during DOS2UNIX translation.
+
+2008-05-16 - nQuake v1.2b for Linux
+
+* Fixed the error messages caused by tr.
+
+2008-02-18 - nQuake v1.2a for Linux
+
+* Renamed README to INSTALL for clarity.
+* Removed ezQuake's security module.
+
+2008-02-18 - nQuake v1.8a
+
+* Removed ezQuake's security module.
+
+2008-02-18 - nQuake CD-ROM Generator v1.0a
+
+* Removed ezQuake's security module.
+
+2007-11-06 - nQuake v1.2 for Linux/Mac OS X
+
+* Added gnu.txt (oops).
+* Added readme files describing the installation process.
+* Added [possibility of] Linux specific configuration settings. (Linux)
+* Changed the behaviour of the installer so the OS-specific modifications are taken from ./ezquake/configs/config-<os>.cfg instead of from the installer.
+* Changed the DOS->UNIX code to replace \r instead of \015 as this caused problems on some OS configurations.
+* Removed the -size parameter on pak1.pak searches in case the user has a modified pak1.pak and still wants to use it.
+* Fixed the bug where entering ~/whatever as install dir would install nQuake into ./~/whatever.
+* Fixed the bug where setup would always search /home for pak1.pak (i.e. not the specified search path).
+* Code cleanup.
+
+2007-11-05 - nQuake v1.1 for Linux/Mac OS X
+
+* Added user input when base folder is set for removal.
+* Added a check to see if the install dir exists or not, and if it is writable or not.
+* Changed the default installation path to /Applications/nQuake. (Mac OS X)
+* Setup now modifies the default configuration to more Mac friendly values. (Mac OS X)
+* Fixed the bug that caused the installer to exit if a downloaded distfile was smaller than what was specified in nquake.ini.
+* Fixed several small bugs that caused the installer to produce errors.
+* Code cleanup.
+
+2007-11-04 - nQuake v1.0 for Linux/Mac OS X
+
+* Initial release.
+
+2007-11-04 - nQuake CD-ROM Generator v1.0
+
+* Initial release.
+
+2007-10-20 - nQuake v1.8
+
+* Added ezQuake security module.
+* Setup now starts up twice as fast.
+* Setup now asks the user to associate QuakeWorld related files or not.
+* Uninstaller now only removes registry entries and start menu items if they were installed by the same nQuake as is being uninstalled.
+* Fixed the bug where setup would not remove distfiles after installation.
+
+2007-08-15 - nQuake v1.7d
+
+* Fixed the bug where uninstall options 1 and 2 did not work.
+
+2007-08-08 - nQuake v1.7c
+
+* Added a link to purchase Quake on Steam.
+
+2007-08-06 - nQuake v1.7b
+
+* Setup now looks for pak1.pak in possible Steam installations of Quake.
+
+2007-08-02 - nQuake v1.7a
+
+* Fixed the bug where nquake.ini would not get copied to the distribution file folder after installation was complete.
+
+2007-08-01 - nQuake v1.7
+
+* Setup now displays the actual installation progress.
+* Setup now displays more informative messages when downloading and extracting files.
+* Setup now displays the details window when cancelling the installation.
+* Pressing the [x] during the initialization now cancels the installation.
+* Changed the look of the downloading process.
+
+2007-07-25 - nQuake v1.6
+
+* Added an error page in case there were errors during the installation.
+* Added a "retry" button to the initialization phase should the installer not be able to download nquake.ini.
+* Removed the "Show details" button from the installation page.
+* Removed the "Visit community site" link during offline installations.
+* Removed the "This is an online installer..." text from the welcome page during offline installations.
+
+2007-07-23 - nQuake v1.5b
+
+* Fixed the bug that printed an infinite loop of "Extract: OK" messages when a downloaded zip file was corrupt.
+
+2007-07-18 - nQuake v1.5a
+
+* Fixed the bug that messed up the pak1.pak finder if the first found pak1.pak didn't have correct size.
+
+2007-07-17 - nQuake v1.5
+
+* Setup initialization time reduced by 75%.
+* Setup will now backup existing config files as "config-YYYYMMDDHHMMSS.cfg" instead of "config.bak".
+
+2007-07-16 - nQuake v1.4
+
+* Changing the versioning system from x.y to x.ya, where a is a-z, representing small changes.
+* Made nQuake offline compatible, failing the download during initialization triggers the offline mode.
+* Merged the two uninstall pages into one.
+* Merged the "This will remove *all* files..." popup with the new uninstall page.
+* Added file association for .lst (Notepad).
+* Fixed the bug where setup would not update old distfiles even if their creation dates were in fact outdated.
+
+2007-07-15 - nQuake v1.31
+
+* Fixed the bug where setup would not update old distfiles due to distfiledates.ini not being saved.
+
+2007-07-15 - nQuake v1.3
+
+* Added an uninstall option for removing files that were installed by nQuake, even if they were modified.
+* Setup no longer attempts to copy pak1.pak if it already exists in the installation directory.
+* Setup no longer steals focus when copying pak1.pak.
+* Setup now checks the validity of pak1.pak.
+* Setup now complains if you specify a file path that doesn't exist using the Browse button during the Full Version step.
+* Setup now automatically shows the finish page when the installation process is finished.
+* Setup now associates ezQuake with qtv/mvd/qwd/qwz files.
+* Improved initialization process.
+* Improved installer header gfx.
+
+2007-07-14 - nQuake v1.2
+
+* nQuake is now the solid package it claims to be - the user has no choices as to what packages are installed.
+* When uninstalling, user gets the choice of removing just the files nQuake installed, or removing the nQuake folder altogether.
+* nQuake now backups old config file (ezquake/configs/config.cfg) if installed into an old Quake directory.
+* Installer no longer temporarily creates a distfiles.log in the distfiles directory (useless).
+* Setup is now clean of popup messages where they could be avoided.
+* The installer has been generally cleaned up.
+
+2007-07-09 - nQuake v1.1
+
+* Installer now asks if it should keep the distribution files instead of asking to delete them.
+* Installer now looks for pak1.pak on 21 likely locations. If pak1.pak is not found, the user gets to browse for it.
+* Fixed the bug where nQuake wouldn't detect newer versions if the current version was x.0x.
+
+2007-07-05 - nQuake v1.01
+
+* Added link to gfx.qwdrama.com in Links.
+* Fixed bug where installer doesn't remove distfiledates.ini from nquake-distfiles.
+* Changed "Improved Visuals" to "Enhanced Graphics".
+* Changed help/update links in program info (they were fQuake links in v1.0).
+
+2007-07-01 - nQuake v1.0
+
+* First public release.

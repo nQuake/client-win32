@@ -1,8 +1,8 @@
 ;nQuake NSIS Online Installer Script
-;By Empezar 2007-05-31; Last modified 2008-02-18
+;By Empezar 2007-05-31; Last modified 2008-06-01
 
-!define VERSION "1.8a"
-!define SHORTVERSION "18a"
+!define VERSION "1.9"
+!define SHORTVERSION "19"
 
 Name "nQuake"
 OutFile "nquake${SHORTVERSION}_installer.exe"
@@ -34,8 +34,8 @@ InstallDirRegKey HKLM "Software\nQuake" "Install_Dir"
 ;----------------------------------------------------
 ;Variables
 
+Var DISTFILES_DELETE
 Var ASSOCIATE_FILES
-Var DISTFILES_KEEP
 Var DISTFILES_PATH
 Var DISTFILES_UPDATE
 Var DISTFILES_URL
@@ -85,8 +85,6 @@ Page custom DISTFILEFOLDER
 
 Page custom MIRRORSELECT
 
-Page custom KEEPDISTFILES
-
 Page custom ASSOCIATION
 
 !insertmacro MUI_PAGE_DIRECTORY
@@ -132,7 +130,6 @@ LangString ^SpaceRequired ${LANG_ENGLISH} "Download size: "
 ReserveFile "fullversion.ini"
 ReserveFile "distfilefolder.ini"
 ReserveFile "mirrorselect.ini"
-ReserveFile "keepdistfiles.ini"
 ReserveFile "association.ini"
 ReserveFile "errors.ini"
 ReserveFile "uninstall.ini"
@@ -152,8 +149,8 @@ Section "" # Prepare installation
   # Read information from custom pages
   !insertmacro MUI_INSTALLOPTIONS_READ $DISTFILES_PATH "distfilefolder.ini" "Field 3" "State"
   !insertmacro MUI_INSTALLOPTIONS_READ $DISTFILES_UPDATE "distfilefolder.ini" "Field 4" "State"
+  !insertmacro MUI_INSTALLOPTIONS_READ $DISTFILES_DELETE "distfilefolder.ini" "Field 5" "State"
   !insertmacro MUI_INSTALLOPTIONS_READ $PAK_LOCATION "fullversion.ini" "Field 3" "State"
-  !insertmacro MUI_INSTALLOPTIONS_READ $DISTFILES_KEEP "keepdistfiles.ini" "Field 2" "State"
   !insertmacro MUI_INSTALLOPTIONS_READ $ASSOCIATE_FILES "association.ini" "Field 2" "State"
 
   # Create distfiles folder if it doesn't already exist
@@ -164,10 +161,6 @@ Section "" # Prepare installation
   # Calculate the installation size
   ${If} ${FileExists} $PAK_LOCATION
   ${AndUnless} ${FileExists} "$INSTDIR\id1\pak1.pak"
-    ;StrCpy $0 $PAK_LOCATION -8
-    ;StrCpy $1 $PAK_LOCATION "" -8
-    ;${GetSize} $0 "/M=$1 /S=0K /G=0" $0 $1 $2
-    ;IntOp $INSTSIZE $INSTSIZE + $0
     # pak1.pak is 14722kb zipped
     IntOp $INSTSIZE $INSTSIZE + 14722
   ${EndIf}
@@ -175,13 +168,21 @@ Section "" # Prepare installation
     ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "qsw106.zip"
     IntOp $INSTSIZE $INSTSIZE + $0
   ${EndUnless}
-  ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "nquake.zip"
+  ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "misc.zip"
+  IntOp $INSTSIZE $INSTSIZE + $0
+  ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "misc_gpl.zip"
   IntOp $INSTSIZE $INSTSIZE + $0
   ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "ezquake.zip"
   IntOp $INSTSIZE $INSTSIZE + $0
   ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "frogbot.zip"
   IntOp $INSTSIZE $INSTSIZE + $0
-  ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "eyecandy.zip"
+  ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "textures.zip"
+  IntOp $INSTSIZE $INSTSIZE + $0
+  ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "models.zip"
+  IntOp $INSTSIZE $INSTSIZE + $0
+  ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "skins.zip"
+  IntOp $INSTSIZE $INSTSIZE + $0
+  ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "lits.zip"
   IntOp $INSTSIZE $INSTSIZE + $0
   ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "maps.zip"
   IntOp $INSTSIZE $INSTSIZE + $0
@@ -245,7 +246,31 @@ Section "nQuake" NQUAKE
 
   # Download and install pak0.pak (shareware data)
   ${Unless} ${FileExists} "$INSTDIR\ID1\PAK0.PAK"
-    !insertmacro InstallSection qsw106.zip "Quake shareware"
+    StrCpy $0 $PAK_LOCATION -8
+	${If} ${FileExists} "$0\pak0.pak"
+	  CreateDirectory "$INSTDIR\ID1"
+	  CopyFiles /SILENT "$0\pak0.pak" "$INSTDIR\ID1\PAK0.PAK"
+	${Else}
+      !insertmacro InstallSection qsw106.zip "Quake shareware"
+	  # Remove crap files extracted from shareware zip
+      Delete "$INSTDIR\CWSDPMI.EXE"
+      Delete "$INSTDIR\QLAUNCH.EXE"
+      Delete "$INSTDIR\QUAKE.EXE"
+      Delete "$INSTDIR\GENVXD.DLL"
+      Delete "$INSTDIR\QUAKEUDP.DLL"
+      Delete "$INSTDIR\PDIPX.COM"
+      Delete "$INSTDIR\Q95.BAT"
+      Delete "$INSTDIR\COMEXP.TXT"
+      Delete "$INSTDIR\HELP.TXT"
+      Delete "$INSTDIR\LICINFO.TXT"
+      Delete "$INSTDIR\MANUAL.TXT"
+      Delete "$INSTDIR\ORDER.TXT"
+      Delete "$INSTDIR\README.TXT"
+      Delete "$INSTDIR\READV106.TXT"
+      Delete "$INSTDIR\SLICNSE.TXT"
+      Delete "$INSTDIR\TECHINFO.TXT"
+      Delete "$INSTDIR\MGENVXD.VXD"
+	${EndIf}
     # Add to installed size
     ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "qsw106.zip"
     IntOp $INSTALLED $INSTALLED + $0
@@ -264,37 +289,13 @@ Section "nQuake" NQUAKE
     # Copy pak1.pak
     CopyFiles /SILENT $PAK_LOCATION "$INSTDIR\id1\pak1.pak"
     FileWrite $INSTLOG "id1\pak1.pak$\r$\n"
-    # Add to installed size
-    ;StrCpy $0 $PAK_LOCATION -8
-    ;StrCpy $1 $PAK_LOCATION "" -8
-    ;${GetSize} $0 "/M=$1 /S=0K /G=0" $0 $1 $2
-    ;IntOp $INSTALLED $INSTALLED + $0
-    # pak1.pak is 14722kb zipped
+    # Add to installed size (pak1.pak is 14722kb zipped)
     IntOp $INSTALLED $INSTALLED + 14722
     # Set progress bar (post pak1.pak)
     IntOp $0 $INSTALLED * 100
     IntOp $0 $0 / $INSTSIZE
     RealProgress::SetProgress /NOUNLOAD $0
   ${EndIf}
-
-  # Remove crap files extracted from shareware zip
-  Delete "$INSTDIR\CWSDPMI.EXE"
-  Delete "$INSTDIR\QLAUNCH.EXE"
-  Delete "$INSTDIR\QUAKE.EXE"
-  Delete "$INSTDIR\GENVXD.DLL"
-  Delete "$INSTDIR\QUAKEUDP.DLL"
-  Delete "$INSTDIR\PDIPX.COM"
-  Delete "$INSTDIR\Q95.BAT"
-  Delete "$INSTDIR\COMEXP.TXT"
-  Delete "$INSTDIR\HELP.TXT"
-  Delete "$INSTDIR\LICINFO.TXT"
-  Delete "$INSTDIR\MANUAL.TXT"
-  Delete "$INSTDIR\ORDER.TXT"
-  Delete "$INSTDIR\README.TXT"
-  Delete "$INSTDIR\READV106.TXT"
-  Delete "$INSTDIR\SLICNSE.TXT"
-  Delete "$INSTDIR\TECHINFO.TXT"
-  Delete "$INSTDIR\MGENVXD.VXD"
 
   # Backup old configs if such exist
   ${If} ${FileExists} "$INSTDIR\ezquake\configs\config.cfg"
@@ -307,16 +308,26 @@ Section "nQuake" NQUAKE
     Rename "$INSTDIR\ezquake\configs\config.cfg" "$INSTDIR\ezquake\configs\config-$1.cfg"
   ${EndIf}
 
-  # Download and install basic files
-  !insertmacro InstallSection nquake.zip "basic files"
+  # Download and install basic files (non-gpl)
+  !insertmacro InstallSection misc.zip "basic files (1 of 2)"
   # Add to installed size
-  ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "nquake.zip"
+  ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "misc.zip"
   IntOp $INSTALLED $INSTALLED + $0
   # Set progress bar
   IntOp $0 $INSTALLED * 100
   IntOp $0 $0 / $INSTSIZE
   RealProgress::SetProgress /NOUNLOAD $0
 
+  # Download and install basic files (gpl)
+  !insertmacro InstallSection misc_gpl.zip "basic files (2 of 2)"
+  # Add to installed size
+  ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "misc_gpl.zip"
+  IntOp $INSTALLED $INSTALLED + $0
+  # Set progress bar
+  IntOp $0 $INSTALLED * 100
+  IntOp $0 $0 / $INSTSIZE
+  RealProgress::SetProgress /NOUNLOAD $0
+  
   # Download and install ezQuake
   !insertmacro InstallSection ezquake.zip "ezQuake"
   # Add to installed size
@@ -327,16 +338,46 @@ Section "nQuake" NQUAKE
   IntOp $0 $0 / $INSTSIZE
   RealProgress::SetProgress /NOUNLOAD $0
 
-  # Download and install enhanced graphics data
-  !insertmacro InstallSection eyecandy.zip "enhanced graphics data"
+  # Download and install textures
+  !insertmacro InstallSection textures.zip "textures"
   # Add to installed size
-  ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "eyecandy.zip"
+  ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "textures.zip"
   IntOp $INSTALLED $INSTALLED + $0
   # Set progress bar
   IntOp $0 $INSTALLED * 100
   IntOp $0 $0 / $INSTSIZE
   RealProgress::SetProgress /NOUNLOAD $0
 
+  # Download and install models
+  !insertmacro InstallSection models.zip "models"
+  # Add to installed size
+  ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "models.zip"
+  IntOp $INSTALLED $INSTALLED + $0
+  # Set progress bar
+  IntOp $0 $INSTALLED * 100
+  IntOp $0 $0 / $INSTSIZE
+  RealProgress::SetProgress /NOUNLOAD $0
+
+  # Download and install skins
+  !insertmacro InstallSection skins.zip "skins"
+  # Add to installed size
+  ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "skins.zip"
+  IntOp $INSTALLED $INSTALLED + $0
+  # Set progress bar
+  IntOp $0 $INSTALLED * 100
+  IntOp $0 $0 / $INSTSIZE
+  RealProgress::SetProgress /NOUNLOAD $0
+  
+  # Download and install enhanced lighting files
+  !insertmacro InstallSection lits.zip "lighting files"
+  # Add to installed size
+  ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "lits.zip"
+  IntOp $INSTALLED $INSTALLED + $0
+  # Set progress bar
+  IntOp $0 $INSTALLED * 100
+  IntOp $0 $0 / $INSTSIZE
+  RealProgress::SetProgress /NOUNLOAD $0
+  
   # Download and install frogbot
   !insertmacro InstallSection frogbot.zip "frogbot"
   # Add to installed size
@@ -348,7 +389,7 @@ Section "nQuake" NQUAKE
   RealProgress::SetProgress /NOUNLOAD $0
 
   # Download and install custom maps
-  !insertmacro InstallSection maps.zip "custom maps"
+  !insertmacro InstallSection maps.zip "maps"
   # Add to installed size
   ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "maps.zip"
   IntOp $INSTALLED $INSTALLED + $0
@@ -416,7 +457,7 @@ Section "" # Clean up installation
   FileClose $INSTLOG
 
   # Remove downloaded distfiles
-  ${If} $DISTFILES_KEEP == 0
+  ${If} $DISTFILES_DELETE == 1
     FileOpen $DISTLOG $DISTLOGTMP r
       ${DoUntil} ${Errors}
         FileRead $DISTLOG $0
@@ -507,9 +548,9 @@ Section "Uninstall"
     ${DoUntil} ${Errors}
       FileRead $R0 $0
       StrCpy $0 $0 -2
+      # Only remove file if it has not been altered since install, if the user chose to do so
       ${If} ${FileExists} "$INSTDIR\$0"
       ${AndUnless} $REMOVE_MODIFIED_FILES == 1
-        # Only remove file if it has not been altered since install
         ${time::GetFileTime} "$INSTDIR\$0" $2 $3 $4
         ${time::MathTime} "second($1) - second($3) =" $2
         ${If} $2 >= 0
@@ -532,6 +573,8 @@ Section "Uninstall"
     DetailPrint "Removed $0 empty directories"
     RMDir /REBOOTOK $INSTDIR
   ${Else}
+    # Ask the user if he is sure about removing all the files contained within the nQuake directory
+    MessageBox MB_YESNO|MB_ICONEXCLAMATION "This will remove all files contained within the nQuake directory.$\r$\n$\r$\nAre you sure?" IDNO AbortUninst
     RMDir /r /REBOOTOK $INSTDIR
     RealProgress::SetProgress /NOUNLOAD 100
   ${EndIf}
@@ -573,6 +616,11 @@ Section "Uninstall"
     DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\nQuake"
     DeleteRegKey HKLM "Software\nQuake"
   ${EndIf}
+
+  Goto FinishUninst
+  AbortUninst:
+  Abort "Uninstallation aborted."
+  FinishUninst:
 
 SectionEnd
 
@@ -749,10 +797,12 @@ Function DISTFILEFOLDER
     !insertmacro MUI_INSTALLOPTIONS_WRITE "distfilefolder.ini" "Field 1" "Text" "Setup will use the distribution files (used to install nQuake) located in the following folder. To use a different folder, click Browse and select another folder. Click Next to continue."
     !insertmacro MUI_INSTALLOPTIONS_WRITE "distfilefolder.ini" "Field 4" "Type" ""
     !insertmacro MUI_INSTALLOPTIONS_WRITE "distfilefolder.ini" "Field 4" "State" "0"
+    !insertmacro MUI_INSTALLOPTIONS_WRITE "distfilefolder.ini" "Field 5" "Type" ""
+    !insertmacro MUI_INSTALLOPTIONS_WRITE "distfilefolder.ini" "Field 5" "State" "0"
   ${Else}
     !insertmacro MUI_HEADER_TEXT "Distribution Files" "Select where you want the distribution files to be downloaded."
   ${EndIf}
-  !insertmacro MUI_INSTALLOPTIONS_WRITE "distfilefolder.ini" "Field 5" "State" ${DISTFILES_PATH}
+  !insertmacro MUI_INSTALLOPTIONS_WRITE "distfilefolder.ini" "Field 3" "State" ${DISTFILES_PATH}
   !insertmacro MUI_INSTALLOPTIONS_DISPLAY "distfilefolder.ini"
 
 FunctionEnd
@@ -783,17 +833,6 @@ Function MIRRORSELECT
 
     !insertmacro MUI_INSTALLOPTIONS_WRITE "mirrorselect.ini" "Field 3" "ListItems" $2
     !insertmacro MUI_INSTALLOPTIONS_DISPLAY "mirrorselect.ini"
-  ${EndUnless}
-
-FunctionEnd
-
-Function KEEPDISTFILES
-
-  # Only display keep distfile page if the installer is in online mode
-  ${Unless} $OFFLINE == 1
-    !insertmacro MUI_INSTALLOPTIONS_EXTRACT "keepdistfiles.ini"
-    !insertmacro MUI_HEADER_TEXT "Distribution Files" "Select whether you want to keep the distribution files or not."
-    !insertmacro MUI_INSTALLOPTIONS_DISPLAY "keepdistfiles.ini"
   ${EndUnless}
 
 FunctionEnd
@@ -928,26 +967,28 @@ Function .onInit
 
   # Determine sizes on all the sections
   !insertmacro DetermineSectionSize qsw106.zip
-  StrCpy $R0 $SIZE
-  !insertmacro DetermineSectionSize nquake.zip
-  StrCpy $R1 $SIZE
+  IntOp $1 0 + $SIZE
+  !insertmacro DetermineSectionSize misc.zip
+  IntOp $1 $1 + $SIZE
+  !insertmacro DetermineSectionSize misc_gpl.zip
+  IntOp $1 $1 + $SIZE
   !insertmacro DetermineSectionSize ezquake.zip
-  StrCpy $R2 $SIZE
-  !insertmacro DetermineSectionSize eyecandy.zip
-  StrCpy $R3 $SIZE
+  IntOp $1 $1 + $SIZE
+  !insertmacro DetermineSectionSize textures.zip
+  IntOp $1 $1 + $SIZE
+  !insertmacro DetermineSectionSize models.zip
+  IntOp $1 $1 + $SIZE
+  !insertmacro DetermineSectionSize skins.zip
+  IntOp $1 $1 + $SIZE
+  !insertmacro DetermineSectionSize lits.zip
+  IntOp $1 $1 + $SIZE
   !insertmacro DetermineSectionSize frogbot.zip
-  StrCpy $R4 $SIZE
+  IntOp $1 $1 + $SIZE
   !insertmacro DetermineSectionSize maps.zip
-  StrCpy $R5 $SIZE
+  IntOp $1 $1 + $SIZE
   !insertmacro DetermineSectionSize demos.zip
-  StrCpy $R6 $SIZE
-  IntOp $0 $R0 + $R1
-  IntOp $0 $0 + $R2
-  IntOp $0 $0 + $R3
-  IntOp $0 $0 + $R4
-  IntOp $0 $0 + $R5
-  IntOp $0 $0 + $R6
-  SectionSetSize ${NQUAKE} $0
+  IntOp $1 $1 + $SIZE
+  SectionSetSize ${NQUAKE} $1
 
   InitEnd:
 
