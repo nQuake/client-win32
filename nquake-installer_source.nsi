@@ -1,8 +1,8 @@
 ;nQuake NSIS Online Installer Script
-;By Empezar 2007-05-31; Last modified 2007-08-08
+;By Empezar 2007-05-31; Last modified 2007-08-15
 
-!define VERSION "1.7c"
-!define SHORTVERSION "17c"
+!define VERSION "1.7d"
+!define SHORTVERSION "17d"
 
 Name "nQuake"
 OutFile "nquake${SHORTVERSION}_installer.exe"
@@ -241,8 +241,6 @@ Section "nQuake" NQUAKE
   # Download and install pak0.pak (shareware data)
   ${Unless} ${FileExists} "$INSTDIR\ID1\PAK0.PAK"
     !insertmacro InstallSection qsw106.zip "Quake shareware"
-    FileClose $INSTLOG
-    FileOpen $INSTLOG $INSTLOGTMP w
     # Add to installed size
     ReadINIStr $0 $NQUAKE_INI "distfile_sizes" "qsw106.zip"
     IntOp $INSTALLED $INSTALLED + $0
@@ -394,6 +392,8 @@ SectionEnd
 
 Section "" # Clean up installation
 
+  FileClose $INSTLOG
+
   # Write install.log
   FileOpen $INSTLOG "$INSTDIR\install.log" w
     ${time::GetFileTime} "$INSTDIR\install.log" $0 $1 $2
@@ -514,6 +514,7 @@ Section "Uninstall"
           Delete /REBOOTOK "$INSTDIR\$0"
         ${EndIf}
       ${ElseIf} $REMOVE_MODIFIED_FILES == 1
+      ${AndIf} ${FileExists} "$INSTDIR\$0"
         Delete /REBOOTOK "$INSTDIR\$0"
       ${EndIf}
       # Set progress bar
