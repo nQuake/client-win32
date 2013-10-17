@@ -272,7 +272,7 @@ Section "nQuake" NQUAKE
     StrCpy $R0 "$DISTFILES_PATH"
   ${EndIf}
   ${GetSize} $R0 "/M=pak0.pak /S=0B /G=0" $7 $8 $9
-  ${If} $7 == "18278619"
+  ${If} $7 == "18689235"
     CreateDirectory "$INSTDIR\id1"
     ${Unless} ${FileExists} "$INSTDIR\id1\pak0.pak"
       CopyFiles /SILENT "$R0\pak0.pak" "$INSTDIR\id1\pak0.pak"
@@ -284,6 +284,7 @@ Section "nQuake" NQUAKE
       ${EndUnless}
       Delete "$DISTFILES_PATH\qsw106.zip"
     ${EndIf}
+    FileWrite $INSTLOG "id1\pak0.pak$\r$\n"
     Goto SkipShareware
   ${EndIf}
   !insertmacro InstallSection qsw106.zip "Quake shareware"
@@ -322,7 +323,6 @@ Section "nQuake" NQUAKE
   IntOp $0 $INSTALLED * 100
   IntOp $0 $0 / $INSTSIZE
   RealProgress::SetProgress /NOUNLOAD $0
-  FileWrite $INSTLOG "id1\pak0.pak$\r$\n"
 
   # Backup old configs if such exist
   ${If} ${FileExists} "$INSTDIR\ezquake\configs\config.cfg"
@@ -487,6 +487,7 @@ Section "" # Clean up installation
     ${time::GetFileTime} "$INSTDIR\install.log" $0 $1 $2
     FileWrite $INSTLOG "Install date: $1$\r$\n"
     FileOpen $R0 $INSTLOGTMP r
+      ClearErrors
       ${DoUntil} ${Errors}
         FileRead $R0 $0
         StrCpy $0 $0 -2
@@ -809,7 +810,7 @@ Function SetSize
       StrCpy $R0 "$DISTFILES_PATH"
     ${EndIf}
     ${GetSize} $R0 "/M=pak0.pak /S=0B /G=0" $7 $8 $9
-    ${If} $7 == "18278619"
+    ${If} $7 == "18689235"
       Goto SkipShareware
     ${EndIf}
   ${EndUnless}
