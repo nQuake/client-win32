@@ -1,8 +1,8 @@
 ;nQuake NSIS Online Installer Script
-;By Empezar 2007-05-31; Last modified 2013-10-13
+;By Empezar 2007-05-31; Last modified 2013-10-17
 
-!define VERSION "2.6"
-!define SHORTVERSION "26"
+!define VERSION "2.7"
+!define SHORTVERSION "27"
 
 Name "nQuake"
 OutFile "nquake${SHORTVERSION}_installer.exe"
@@ -274,10 +274,14 @@ Section "nQuake" NQUAKE
   ${GetSize} $R0 "/M=pak0.pak /S=0B /G=0" $7 $8 $9
   ${If} $7 == "18278619"
     CreateDirectory "$INSTDIR\id1"
-    CopyFiles "$R0\pak0.pak" "$INSTDIR\id1\pak0.pak"
+    ${Unless} ${FileExists} "$INSTDIR\id1\pak0.pak"
+      CopyFiles /SILENT "$R0\pak0.pak" "$INSTDIR\id1\pak0.pak"
+    ${EndUnless}
     # Keep pak0.pak and remove qsw106.zip in distfile folder if DISTFILES_DELETE is 0
     ${If} $DISTFILES_DELETE == 0
-      CopyFiles "$INSTDIR\id1\pak0.pak" "$DISTFILES_PATH\pak0.pak"
+      ${Unless} ${FileExists} "$DISTFILES_PATH\pak0.pak"
+        CopyFiles /SILENT "$INSTDIR\id1\pak0.pak" "$DISTFILES_PATH\pak0.pak"
+      ${EndUnless}
       Delete "$DISTFILES_PATH\qsw106.zip"
     ${EndIf}
     Goto SkipShareware
@@ -305,7 +309,9 @@ Section "nQuake" NQUAKE
   Rename "$INSTDIR\id1\PAK0.PAK" "$INSTDIR\id1\pak0.pak"
   # Keep pak0.pak and remove qsw106.zip in distfile folder if DISTFILES_DELETE is 0
   ${If} $DISTFILES_DELETE == 0
-    CopyFiles "$INSTDIR\id1\pak0.pak" "$DISTFILES_PATH\pak0.pak"
+    ${Unless} ${FileExists} "$DISTFILES_PATH\pak0.pak"
+      CopyFiles /SILENT "$INSTDIR\id1\pak0.pak" "$DISTFILES_PATH\pak0.pak"
+    ${EndUnless}
     Delete "$DISTFILES_PATH\qsw106.zip"
   ${EndIf}
   SkipShareware:
@@ -403,10 +409,14 @@ Section "nQuake" NQUAKE
   ${EndIf}
   ${GetSize} "$R0" "/M=pak1.pak /S=0B /G=0" $7 $8 $9
   ${If} $7 == "34257856"
-    CopyFiles "$R0\pak1.pak" "$INSTDIR\id1\pak1.pak"
+    ${Unless} ${FileExists} "$INSTDIR\id1\pak1.pak"
+      CopyFiles /SILENT "$R0\pak1.pak" "$INSTDIR\id1\pak1.pak"
+    ${EndUnless}
     ${If} $DISTFILES_DELETE == 0
     ${AndIf} $R0 != $DISTFILES_PATH
-      CopyFiles "$R0\pak1.pak" "$DISTFILES_PATH\pak1.pak"
+      ${Unless} ${FileExists} "$DISTFILES_PATH\pak1.pak"
+        CopyFiles /SILENT "$R0\pak1.pak" "$DISTFILES_PATH\pak1.pak"
+      ${EndUnless}
     ${EndIf}
     FileWrite $INSTLOG "id1\pak1.pak$\r$\n"
     # Remove gpl maps also
@@ -503,7 +513,7 @@ Section "" # Clean up installation
   # Copy nquake.ini to the distfiles directory if "update distfiles" and "keep distfiles" was set
   ${ElseIf} $DISTFILES_UPDATE == 1
     FlushINI $NQUAKE_INI
-    CopyFiles $NQUAKE_INI "$DISTFILES_PATH\nquake.ini"
+    CopyFiles /SILENT $NQUAKE_INI "$DISTFILES_PATH\nquake.ini"
   ${EndIf}
 
   # Write to registry
