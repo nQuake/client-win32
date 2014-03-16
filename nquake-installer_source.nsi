@@ -1,8 +1,8 @@
 ;nQuake NSIS Online Installer Script
-;By Empezar 2007-05-31; Last modified 2013-10-17
+;By Empezar 2007-05-31; Last modified 2014-03-16
 
-!define VERSION "2.7"
-!define SHORTVERSION "27"
+!define VERSION "2.8"
+!define SHORTVERSION "28"
 
 Name "nQuake"
 OutFile "nquake${SHORTVERSION}_installer.exe"
@@ -68,6 +68,7 @@ Var NQUAKE_INI
 Var OFFLINE
 Var REMOVE_ALL_FILES
 Var REMOVE_MODIFIED_FILES
+Var REMOVE_SETUP_FILES
 Var RETRIES
 Var SIZE
 Var STARTMENU_FOLDER
@@ -521,6 +522,7 @@ Section "" # Clean up installation
 
   # Write to registry
   WriteRegStr HKCU "Software\nQuake" "Install_Dir" "$INSTDIR"
+  WriteRegStr HKCU "Software\nQuake" "Setup_Dir" "$DISTFILES_PATH"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\nQuake" "DisplayName" "nQuake"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\nQuake" "DisplayVersion" "${VERSION}"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\nQuake" "DisplayIcon" "$INSTDIR\uninstall.exe"
@@ -559,6 +561,7 @@ Section "Uninstall"
   # Read uninstall settings
   !insertmacro MUI_INSTALLOPTIONS_READ $REMOVE_MODIFIED_FILES "uninstall.ini" "Field 5" "State"
   !insertmacro MUI_INSTALLOPTIONS_READ $REMOVE_ALL_FILES "uninstall.ini" "Field 6" "State"
+  !insertmacro MUI_INSTALLOPTIONS_READ $REMOVE_SETUP_FILES "uninstall.ini" "Field 6" "State"
 
   # Set progress bar to 0%
   RealProgress::SetProgress /NOUNLOAD 0
@@ -611,6 +614,39 @@ Section "Uninstall"
     RMDir /r /REBOOTOK $INSTDIR
     RealProgress::SetProgress /NOUNLOAD 100
   ${EndIf}
+
+  # Remove setup files if user checked "remove setup files"
+  ${If} $REMOVE_SETUP_FILES == 1
+    ReadRegStr $R0 HKCU "Software\nQuake" "Setup_Dir"
+    ${If} ${FileExists} "$R0\addon-clanarena.zip"
+      Delete /REBOOTOK "$R0\addon-clanarena.zip"
+    ${EndIf}
+    ${If} ${FileExists} "$R0\addon-fortress.zip"
+      Delete /REBOOTOK "$R0\addon-fortress.zip"
+    ${EndIf}
+    ${If} ${FileExists} "$R0\addon-textures.zip"
+      Delete /REBOOTOK "$R0\addon-textures.zip"
+    ${EndIf}
+    ${If} ${FileExists} "$R0\gpl.zip"
+      Delete /REBOOTOK "$R0\gpl.zip"
+    ${EndIf}
+    ${If} ${FileExists} "$R0\non-gpl.zip"
+      Delete /REBOOTOK "$R0\non-gpl.zip"
+    ${EndIf}
+    ${If} ${FileExists} "$R0\nquake.ini"
+      Delete /REBOOTOK "$R0\nquake.ini"
+    ${EndIf}
+    ${If} ${FileExists} "$R0\pak0.pak"
+      Delete /REBOOTOK "$R0\pak0.pak"
+    ${EndIf}
+    ${If} ${FileExists} "$R0\textures.zip"
+      Delete /REBOOTOK "$R0\textures.zip"
+    ${EndIf}
+    # Remove directory if empty
+    ${locate::RMDirEmpty} $R0 /M=*.* $0
+    !insertmacro RemoveFolderIfEmpty $R0
+  ${EndIf}
+
 
   # Remove start menu items and registry entries if they belong to this nQuake
   ReadRegStr $R0 HKCU "Software\nQuake" "Install_Dir"
