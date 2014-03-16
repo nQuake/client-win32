@@ -15,6 +15,7 @@ InstallDir "C:\nQuake"
 ;---------------------------------------------------
 
 InstallDirRegKey HKCU "Software\nQuake" "Install_Dir"
+InstallDirRegKey HKCU "Software\nQuake" "Setup_Dir"
 
 ;----------------------------------------------------
 ;Header Files
