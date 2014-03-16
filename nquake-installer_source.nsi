@@ -51,6 +51,7 @@ Var CONFIG_JUMP
 Var CONFIGCFG
 Var DISTFILES_DELETE
 Var DISTFILES_PATH
+Var DISTFILES_REDOWNLOAD
 Var DISTFILES_UPDATE
 Var DISTFILES_URL
 Var DISTFILES
@@ -166,7 +167,8 @@ Section "" # Prepare installation
   # Read information from custom pages
   !insertmacro MUI_INSTALLOPTIONS_READ $DISTFILES_PATH "download.ini" "Field 3" "State"
   !insertmacro MUI_INSTALLOPTIONS_READ $DISTFILES_UPDATE "download.ini" "Field 4" "State"
-  !insertmacro MUI_INSTALLOPTIONS_READ $DISTFILES_DELETE "download.ini" "Field 5" "State"
+  !insertmacro MUI_INSTALLOPTIONS_READ $DISTFILES_REDOWNLOAD "download.ini" "Field 5" "State"
+  !insertmacro MUI_INSTALLOPTIONS_READ $DISTFILES_DELETE "download.ini" "Field 6" "State"
   !insertmacro MUI_INSTALLOPTIONS_READ $CONFIG_NAME "config.ini" "Field 4" "State"
   !insertmacro MUI_INSTALLOPTIONS_READ $CONFIG_INVERT "config.ini" "Field 6" "State"
   !insertmacro MUI_INSTALLOPTIONS_READ $CONFIG_FORWARD "config.ini" "Field 9" "State"
@@ -211,7 +213,7 @@ Section "" # Prepare installation
   ${EndIf}
 
   # Find out what mirror was selected
-  !insertmacro MUI_INSTALLOPTIONS_READ $R0 "download.ini" "Field 7" "State"
+  !insertmacro MUI_INSTALLOPTIONS_READ $R0 "download.ini" "Field 8" "State"
   ${If} $R0 == "Randomly selected mirror (Recommended)"
     # Get amount of mirrors ($0 = amount of mirrors)
     StrCpy $0 1
@@ -673,7 +675,7 @@ Function DOWNLOAD
       StrCpy $2 $2 "" 1
     ${EndIf}
 
-    !insertmacro MUI_INSTALLOPTIONS_WRITE "download.ini" "Field 7" "ListItems" $2
+    !insertmacro MUI_INSTALLOPTIONS_WRITE "download.ini" "Field 8" "ListItems" $2
   ${EndUnless}
 
   !insertmacro MUI_INSTALLOPTIONS_DISPLAY "download.ini"
@@ -1003,6 +1005,7 @@ Function .checkDistfileDate
     ${EndIf}
     StrCpy $1 "$4$3$2$6$7$8"
     ${If} $1 < $0
+    ${OrIf} $DISTFILES_REDOWNLOAD == 1
       StrCpy $R2 1
     ${Else}
       ReadINIStr $1 "$DISTFILES_PATH\nquake.ini" "distfile_dates" $R0
