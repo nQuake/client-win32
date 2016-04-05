@@ -17,5 +17,4 @@ Tips:
 If you decide to fork nQuake into your own installer, I would love to get some credit, but since this is GPL I can't force you :)
 
 -
-Niclas "Empezar" Lindstedt
 2014-03-16
