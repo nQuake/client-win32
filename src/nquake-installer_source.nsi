@@ -1,14 +1,15 @@
 ;nQuake NSIS Online Installer Script
-;By Empezar 2007-05-31; Last modified 2014-03-16
+;By Empezar 2007-05-31; Last modified 2016-07-01
 
-!define VERSION "2.8"
-!define SHORTVERSION "28"
+!define VERSION "2.9"
+!define SHORTVERSION "29"
 
 Name "nQuake"
 OutFile "nquake${SHORTVERSION}_installer.exe"
 InstallDir "C:\nQuake"
 
-!define INSTALLER_URL "http://nquake.com" # Note: no trailing slash!
+!define NQUAKE_URL "http://nquake.com" # Note: no trailing slash!
+!define NQUAKE_INI_URL "https://raw.githubusercontent.com/nQuake/client-win32/master/etc/nquake.ini"
 !define DISTFILES_PATH "$LOCALAPPDATA\nQuake\" # Note: no trailing slash!
 
 # Editing anything below this line is not recommended
@@ -21,7 +22,7 @@ InstallDirRegKey HKCU "Software\nQuake" "Setup_Dir"
 ;Header Files
 
 !include "MUI.nsh"
-!include "Win\COM.nsh"
+!include "Win\WinUser.nsh"
 !include "FileAssociation.nsh"
 !include "FileFunc.nsh"
 !insertmacro GetSize
@@ -528,10 +529,10 @@ Section "" # Clean up installation
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\nQuake" "DisplayVersion" "${VERSION}"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\nQuake" "DisplayIcon" "$INSTDIR\uninstall.exe"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\nQuake" "UninstallString" "$INSTDIR\uninstall.exe"
-  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\nQuake" "Publisher" "Empezar (mpezar@gmail.com)"
-  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\nQuake" "URLUpdateInfo" "http://sourceforge.net/project/showfiles.php?group_id=197706"
+  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\nQuake" "Publisher" "Empezar (empezar@quake.world)"
+  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\nQuake" "URLUpdateInfo" "https://github.com/nQuake/client-win32/tree/master/bin"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\nQuake" "URLInfoAbout" "http://nquake.com/"
-  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\nQuake" "HelpLink" "http://sourceforge.net/forum/forum.php?forum_id=702198"
+  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\nQuake" "HelpLink" "http://www.quakeworld.nu/forum/topic/1857"
   WriteRegDWORD HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\nQuake" "NoModify" "1"
   WriteRegDWORD HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\nQuake" "NoRepair" "1"
 
@@ -891,7 +892,7 @@ Function .onInit
 
   # Download nquake.ini
   Start:
-  inetc::get /NOUNLOAD /CAPTION "Initializing..." /BANNER "nQuake is initializing, please wait..." /TIMEOUT 5000 "${INSTALLER_URL}/nquake.ini" $NQUAKE_INI /END
+  inetc::get /NOUNLOAD /CAPTION "Initializing..." /BANNER "nQuake is initializing, please wait..." /TIMEOUT 5000 "${NQUAKE_INI_URL}" $NQUAKE_INI /END
   Pop $0
   ${Unless} $0 == "OK"
     ${If} $0 == "Cancelled"
@@ -921,7 +922,7 @@ Function .onInit
   ${VersionCompare} $R0 $0 $1
   ${If} $1 == 2
     MessageBox MB_YESNO|MB_ICONEXCLAMATION "A newer version of nQuake is available.$\r$\n$\r$\nDo you wish to be taken to the download page?" IDNO ContinueInstall
-    ExecShell "open" ${INSTALLER_URL}
+    ExecShell "open" ${NQUAKE_URL}
     Abort
   ${EndIf}
   ContinueInstall:
