@@ -7,7 +7,7 @@ To compile an nQuake installer, follow these steps:
 
 1) Download NSIS (http://nsis.sourceforge.net/) - version 2.x or v3.0+ doesn't matter.<br>
 2) Copy/move the folders in the `include` folder to `C:\Program Files (x86)\NSIS\`.<br>
-* For NSIS v3.0+ you need to move the plugins (.dll files) to the "x86-ansi" subfolder of "Plugins".*<br>
+_For NSIS v3.0+ you need to move the plugins (.dll files) to the "x86-ansi" subfolder of "Plugins"._<br>
 3) Right-click the `nquake-installer_source.nsi` file and open with makensisw.exe.<br>
 
 Tips:<br>
