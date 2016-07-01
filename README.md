@@ -1,7 +1,5 @@
-nquake
-======
-
 nQuake for Windows
+======
 
 To compile an nQuake installer, follow these steps:
 
