@@ -1,5 +1,5 @@
 ;nQuake NSIS Online Installer Script
-;By Empezar 2007-05-31; Last modified 2016-07-01
+;By Empezar 2007-05-31; Last modified 2016-07-028
 
 !define VERSION "2.9"
 !define SHORTVERSION "29"
@@ -119,7 +119,7 @@ Page custom ERRORS
 
 !define MUI_PAGE_CUSTOMFUNCTION_SHOW "FinishShow"
 !define MUI_FINISHPAGE_LINK "Click here to visit the QuakeWorld portal"
-!define MUI_FINISHPAGE_LINK_LOCATION "http://www.quakeworld.nu/"
+!define MUI_FINISHPAGE_LINK_LOCATION "http://quakeworld.nu/?traffic_source=nquake_install_finish"
 !define MUI_FINISHPAGE_SHOWREADME "$INSTDIR/readme.txt"
 !define MUI_FINISHPAGE_SHOWREADME_TEXT "Open readme"
 !define MUI_FINISHPAGE_SHOWREADME_NOTCHECKED
