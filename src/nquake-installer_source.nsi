@@ -5,7 +5,7 @@
 !define SHORTVERSION "29"
 
 Name "nQuake"
-OutFile "nquake${SHORTVERSION}_installer.exe"
+OutFile "nquake_installer-latest.exe"
 InstallDir "C:\nQuake"
 
 !define NQUAKE_URL "http://nquake.com" # Note: no trailing slash!
