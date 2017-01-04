@@ -448,7 +448,7 @@ Section "" # StartMenu
     WriteINIStr "$SMPROGRAMS\$STARTMENU_FOLDER\Links\Custom Graphics.url" "InternetShortcut" "URL" "http://gfx.quakeworld.nu/"
 
     # Create shortcuts
-    CreateShortCut "$SMPROGRAMS\$STARTMENU_FOLDER\Play QuakeWorld.lnk" "$INSTDIR\ezquake-gl.exe" "" "$INSTDIR\ezquake-gl.exe" 0
+    CreateShortCut "$SMPROGRAMS\$STARTMENU_FOLDER\Play QuakeWorld.lnk" "$INSTDIR\ezquake.exe" "" "$INSTDIR\ezquake.exe" 0
     CreateShortCut "$SMPROGRAMS\$STARTMENU_FOLDER\Readme.lnk" "$INSTDIR\readme.txt" "" "$INSTDIR\readme.txt" 0
     CreateShortCut "$SMPROGRAMS\$STARTMENU_FOLDER\Uninstall nQuake.lnk" "$INSTDIR\uninstall.exe" "" "$INSTDIR\uninstall.exe" 0
 
@@ -539,10 +539,10 @@ Section "" # Clean up installation
   # Create file associations
   ${If} $ASSOCIATE_FILES == 1
     WriteRegStr HKCU "Software\nQuake" "File_Associations" "1"
-    ${registerExtension} "$INSTDIR\ezquake-gl.exe" .qtv "QTV Stream Info File"
-    ${registerExtension} "$INSTDIR\ezquake-gl.exe" .qwz "Qizmo Demo File"
-    ${registerExtension} "$INSTDIR\ezquake-gl.exe" .qwd "Quakeworld Demo File"
-    ${registerExtension} "$INSTDIR\ezquake-gl.exe" .mvd "Multi-View Demo File"
+    ${registerExtension} "$INSTDIR\ezquake.exe" .qtv "QTV Stream Info File"
+    ${registerExtension} "$INSTDIR\ezquake.exe" .qwz "Qizmo Demo File"
+    ${registerExtension} "$INSTDIR\ezquake.exe" .qwd "Quakeworld Demo File"
+    ${registerExtension} "$INSTDIR\ezquake.exe" .mvd "Multi-View Demo File"
   ${Else}
     WriteRegStr HKCU "Software\nQuake" "File_Associations" "0"
   ${EndIf}
