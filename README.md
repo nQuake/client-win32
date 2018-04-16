@@ -13,6 +13,3 @@ Tips:<br>
 * Edit the contents of the installer pages in the .ini files and their functions in the installer source file (e.g. Function DOWNLOAD for the download page).<br>
 
 If you decide to fork nQuake into your own installer, I would love to get some credit, but since this is GPL I can't force you :)
-
--
-2016-07-01
