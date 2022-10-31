@@ -37,6 +37,6 @@
 !macro RemoveFolderIfEmpty FOLDER
   ${locate::GetSize} $INSTDIR "/M=*.* /G=1" $0 $1 $2
   ${If} $1 == 0
-    RMDir /r /REBOOTOK "${FOLDER}"
+    RMDir /REBOOTOK "${FOLDER}"
   ${EndIf}
 !macroend

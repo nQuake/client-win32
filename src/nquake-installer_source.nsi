@@ -226,11 +226,11 @@ Section "" # Prepare installation
       IntOp $0 $0 + 1
     ${LoopUntil} $1 == ""
     IntOp $0 $0 - 2
-  
+
     # Get time (seconds)
     ${time::GetLocalTime} $1
     StrCpy $1 $1 "" -2
-    
+
     # Fix seconds (00 -> 1, 01-09 -> 1-9)
     ${If} $1 == "00"
       StrCpy $1 1
@@ -240,7 +240,7 @@ Section "" # Prepare installation
         StrCpy $1 $1 1 -1
       ${EndIf}
     ${EndIf}
-  
+
     # Loop until you get a number that's within the range 0 < x =< $0
     ${DoUntil} $1 <= $0
       IntOp $1 $1 - $0
@@ -880,7 +880,7 @@ FunctionEnd
 Function DirectoryPageShow
   ${SetSize}
   SectionSetSize ${NQUAKE} $1
-FunctionEnd 
+FunctionEnd
 
 ;----------------------------------------------------
 ;Functions
@@ -1001,26 +1001,32 @@ Function .abortInstallation
 
   # Ask to remove downloaded distfiles
   Messagebox MB_YESNO|MB_ICONEXCLAMATION "Do you wish to keep the downloaded distribution files?" IDYES DistEnd
-  # Get line count for distfiles.log
-  Push $DISTLOGTMP
-  Call .LineCount
-  Pop $R1 # Line count
-  FileOpen $R0 $DISTLOGTMP r
-    StrCpy $5 0 # Current line
-    StrCpy $6 0 # Current % Progress
-    ${DoUntil} ${Errors}
-      FileRead $R0 $0
-      StrCpy $0 $0 -2
-      ${If} ${FileExists} "$DISTFILES_PATH\$0"
-        Delete /REBOOTOK "$DISTFILES_PATH\$0"
-      ${EndIf}
-      # Set progress bar
-      IntOp $7 $5 * 100
-      IntOp $7 $7 / $R1
-      RealProgress::SetProgress /NOUNLOAD $7
-      IntOp $5 $5 + 1
-    ${LoopUntil} ${Errors}
-  FileClose $R0
+
+  ${If} ${FileExists} "$DISTFILES_PATH\addon-clanarena.zip"
+    Delete /REBOOTOK "$DISTFILES_PATH\addon-clanarena.zip"
+  ${EndIf}
+  ${If} ${FileExists} "$DISTFILES_PATH\addon-fortress.zip"
+    Delete /REBOOTOK "$DISTFILES_PATH\addon-fortress.zip"
+  ${EndIf}
+  ${If} ${FileExists} "$DISTFILES_PATH\addon-textures.zip"
+    Delete /REBOOTOK "$DISTFILES_PATH\addon-textures.zip"
+  ${EndIf}
+  ${If} ${FileExists} "$DISTFILES_PATH\gpl.zip"
+    Delete /REBOOTOK "$DISTFILES_PATH\gpl.zip"
+  ${EndIf}
+  ${If} ${FileExists} "$DISTFILES_PATH\non-gpl.zip"
+    Delete /REBOOTOK "$DISTFILES_PATH\non-gpl.zip"
+  ${EndIf}
+  ${If} ${FileExists} "$DISTFILES_PATH\nquake.ini"
+    Delete /REBOOTOK "$DISTFILES_PATH\nquake.ini"
+  ${EndIf}
+  ${If} ${FileExists} "$DISTFILES_PATH\pak0.pak"
+    Delete /REBOOTOK "$DISTFILES_PATH\pak0.pak"
+  ${EndIf}
+  ${If} ${FileExists} "$DISTFILES_PATH\textures.zip"
+    Delete /REBOOTOK "$DISTFILES_PATH\textures.zip"
+  ${EndIf}
+
   # Remove directory if empty
   !insertmacro RemoveFolderIfEmpty $DISTFILES_PATH
   DistEnd:
